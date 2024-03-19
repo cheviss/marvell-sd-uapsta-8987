@@ -4945,7 +4945,7 @@ mlan_status wlan_ret_802_11_scan_ext(mlan_private *pmpriv,
 		/* Setup the timer after scan command response */
 		pcb->moal_start_timer(pmpriv->adapter->pmoal_handle,
 				      pmpriv->adapter->pmlan_cmd_timer, MFALSE,
-				      MRVDRV_TIMER_10S * 2);
+				      MRVDRV_TIMER_1S * 65);
 		pmpriv->adapter->cmd_timer_is_set = MTRUE;
 		LEAVE();
 		return MLAN_STATUS_SUCCESS;

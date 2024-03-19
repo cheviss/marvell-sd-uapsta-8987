@@ -1054,8 +1054,10 @@ static t_u16 wlan_get_cmd_timeout(t_u16 cmd_id)
 	ENTER();
 	switch (cmd_id) {
 	case HostCmd_CMD_802_11_SCAN:
-	case HostCmd_CMD_802_11_SCAN_EXT:
 		timeout = MRVDRV_TIMER_10S * 2;
+		break;
+	case HostCmd_CMD_802_11_SCAN_EXT:
+		timeout = MRVDRV_TIMER_1S * 65;
 		break;
 	case HostCmd_CMD_FUNC_INIT:
 	case HostCmd_CMD_FUNC_SHUTDOWN:
