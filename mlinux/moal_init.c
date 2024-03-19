@@ -2261,12 +2261,12 @@ out:
 	return ret;
 }
 
-module_param(mod_para, charp, 0);
+module_param(mod_para, charp, 0440);
 MODULE_PARM_DESC(mod_para, "Module parameters configuration file");
 module_param(hw_test, int, 0660);
 MODULE_PARM_DESC(hw_test, "0: Disable hardware test; 1: Enable hardware test");
 #ifdef CONFIG_OF
-module_param(dts_enable, int, 0);
+module_param(dts_enable, int, 0440);
 MODULE_PARM_DESC(dts_enable, "0: Disable DTS; 1: Enable DTS");
 #endif
 module_param(hw_name, charp, 0660);
@@ -2274,14 +2274,14 @@ MODULE_PARM_DESC(hw_name, "hardware name");
 
 module_param(fw_name, charp, 0660);
 MODULE_PARM_DESC(fw_name, "Firmware name");
-module_param(req_fw_nowait, int, 0);
+module_param(req_fw_nowait, int, 0440);
 MODULE_PARM_DESC(
 	req_fw_nowait,
 	"0: Use request_firmware API; 1: Use request_firmware_nowait API");
-module_param(fw_reload, int, 0);
+module_param(fw_reload, int, 0440);
 MODULE_PARM_DESC(fw_reload,
 		 "0: disable fw_reload; 1: enable fw reload feature");
-module_param(fw_serial, int, 0);
+module_param(fw_serial, int, 0440);
 MODULE_PARM_DESC(
 	fw_serial,
 	"0: support parallel download FW; 1: support serial download FW");
@@ -2296,24 +2296,24 @@ module_param(drv_mode, int, 0660);
 MODULE_PARM_DESC(drv_mode, "Bit 0: STA; Bit 1: uAP; Bit 2: WIFIDIRECT");
 
 #ifdef STA_SUPPORT
-module_param(max_sta_bss, int, 0);
+module_param(max_sta_bss, int, 0440);
 MODULE_PARM_DESC(max_sta_bss, "Number of STA interfaces (1)");
-module_param(sta_name, charp, 0);
+module_param(sta_name, charp, 0440);
 MODULE_PARM_DESC(sta_name, "STA interface name");
 #endif /* STA_SUPPORT */
 #ifdef UAP_SUPPORT
-module_param(max_uap_bss, int, 0);
+module_param(max_uap_bss, int, 0440);
 MODULE_PARM_DESC(max_uap_bss, "Number of uAP interfaces (1)");
-module_param(uap_name, charp, 0);
+module_param(uap_name, charp, 0440);
 MODULE_PARM_DESC(uap_name, "uAP interface name");
 #endif /* UAP_SUPPORT */
 #ifdef WIFI_DIRECT_SUPPORT
-module_param(max_wfd_bss, int, 0);
+module_param(max_wfd_bss, int, 0440);
 MODULE_PARM_DESC(max_wfd_bss, "Number of WIFIDIRECT interfaces (1)");
-module_param(wfd_name, charp, 0);
+module_param(wfd_name, charp, 0440);
 MODULE_PARM_DESC(wfd_name, "WIFIDIRECT interface name");
 #if defined(STA_CFG80211) && defined(UAP_CFG80211)
-module_param(max_vir_bss, int, 0);
+module_param(max_vir_bss, int, 0440);
 MODULE_PARM_DESC(max_vir_bss, "Number of Virtual interfaces (0)");
 #endif
 #endif /* WIFI_DIRECT_SUPPORT */
@@ -2341,33 +2341,33 @@ module_param(scan_chan_gap, int, 0660);
 MODULE_PARM_DESC(
 	scan_chan_gap,
 	"Time gap between two scans in milliseconds when connected to AP(max value 500ms)");
-module_param(sched_scan, int, 0);
+module_param(sched_scan, int, 0440);
 MODULE_PARM_DESC(sched_scan,
 		 "0: disable sched_scan; 1: enable sched_scan default");
-module_param(max_tx_buf, int, 0);
+module_param(max_tx_buf, int, 0440);
 MODULE_PARM_DESC(max_tx_buf, "Maximum Tx buffer size (2048/4096/8192)");
 
 #if defined(SDIO)
-module_param(intmode, int, 0);
+module_param(intmode, int, 0440);
 MODULE_PARM_DESC(intmode, "0: INT_MODE_SDIO, 1: INT_MODE_GPIO");
-module_param(gpiopin, int, 0);
+module_param(gpiopin, int, 0440);
 MODULE_PARM_DESC(gpiopin, "255:new GPIO int mode, other vlue: gpio pin number");
 #endif
 
-module_param(pm_keep_power, int, 0);
+module_param(pm_keep_power, int, 0440);
 MODULE_PARM_DESC(pm_keep_power, "1: PM keep power; 0: PM no power");
 #ifdef SDIO_SUSPEND_RESUME
-module_param(shutdown_hs, int, 0);
+module_param(shutdown_hs, int, 0440);
 MODULE_PARM_DESC(shutdown_hs,
 		 "1: Enable HS when shutdown; 0: No HS when shutdown");
 #endif
 #if defined(STA_SUPPORT)
-module_param(cfg_11d, int, 0);
+module_param(cfg_11d, int, 0440);
 MODULE_PARM_DESC(cfg_11d,
 		 "0: MLAN default; 1: Enable 802.11d; 2: Disable 802.11d");
 #endif
 #if defined(SDIO)
-module_param(slew_rate, int, 0);
+module_param(slew_rate, int, 0440);
 MODULE_PARM_DESC(
 	slew_rate,
 	"0:has the slowest slew rate, then 01, then 02, and 03 has the highest slew rate");
@@ -2382,22 +2382,22 @@ MODULE_PARM_DESC(tx_skb_clone,
 module_param(pmqos, uint, 0660);
 MODULE_PARM_DESC(pmqos, "1: Enable pmqos; 0: Disable pmqos");
 
-module_param(dpd_data_cfg, charp, 0);
+module_param(dpd_data_cfg, charp, 0440);
 MODULE_PARM_DESC(dpd_data_cfg, "DPD data file name");
-module_param(init_cfg, charp, 0);
+module_param(init_cfg, charp, 0440);
 MODULE_PARM_DESC(init_cfg, "Init config file name");
-module_param(cal_data_cfg, charp, 0);
+module_param(cal_data_cfg, charp, 0440);
 MODULE_PARM_DESC(cal_data_cfg, "Calibration data file name");
-module_param(txpwrlimit_cfg, charp, 0);
+module_param(txpwrlimit_cfg, charp, 0440);
 MODULE_PARM_DESC(txpwrlimit_cfg,
 		 "Set configuration data of Tx power limitation");
-module_param(cntry_txpwr, int, 0);
+module_param(cntry_txpwr, int, 0440);
 MODULE_PARM_DESC(
 	cntry_txpwr,
 	"0: disable (default), 1: enable set country txpower table 2: enable set country rgpower table");
-module_param(init_hostcmd_cfg, charp, 0);
+module_param(init_hostcmd_cfg, charp, 0440);
 MODULE_PARM_DESC(init_hostcmd_cfg, "Init hostcmd file name");
-module_param(band_steer_cfg, charp, 0);
+module_param(band_steer_cfg, charp, 0440);
 MODULE_PARM_DESC(band_steer_cfg, "band steer cfg file name");
 module_param(cfg80211_wext, int, 0660);
 #if defined(STA_CFG80211) || defined(UAP_CFG80211)
@@ -2408,56 +2408,56 @@ MODULE_PARM_DESC(
 MODULE_PARM_DESC(cfg80211_wext, "Bit 0: STA WEXT Bit 1: UAP WEXT Bit 2");
 #endif
 #if defined(USB)
-module_param(skip_fwdnld, int, 0);
+module_param(skip_fwdnld, int, 0440);
 MODULE_PARM_DESC(skip_fwdnld, "0: Enable FW download; 1: Disable FW download");
 #endif
-module_param(wq_sched_prio, int, 0);
-module_param(wq_sched_policy, int, 0);
+module_param(wq_sched_prio, int, 0440);
+module_param(wq_sched_policy, int, 0440);
 MODULE_PARM_DESC(wq_sched_prio, "Priority of work queue");
 MODULE_PARM_DESC(
 	wq_sched_policy,
 	"0: SCHED_NORMAL; 1: SCHED_FIFO; 2: SCHED_RR; 3: SCHED_BATCH; 5: SCHED_IDLE");
-module_param(rx_work, int, 0);
+module_param(rx_work, int, 0440);
 MODULE_PARM_DESC(
 	rx_work,
 	"0: default; 1: Enable rx_work_queue; 2: Disable rx_work_queue");
-module_param(aggrctrl, int, 0);
+module_param(aggrctrl, int, 0440);
 MODULE_PARM_DESC(aggrctrl,
 		 "1: Enable Tx aggregation; 0: Disable Tx aggregation");
 #ifdef USB
-module_param(usb_aggr, int, 0);
+module_param(usb_aggr, int, 0440);
 MODULE_PARM_DESC(usb_aggr,
 		 "0: MLAN default; 1: Enable USB aggr; 2: Disable USB aggr");
 #endif
 #ifdef PCIE
-module_param(ring_size, int, 0);
+module_param(ring_size, int, 0440);
 MODULE_PARM_DESC(ring_size,
 		 "adma dma ring size: 32/64/128/256/512, default 128");
-module_param(pcie_int_mode, int, 0);
+module_param(pcie_int_mode, int, 0440);
 MODULE_PARM_DESC(pcie_int_mode, "0: Legacy mode; 1: MSI mode; 2: MSI-X mode");
 #endif /* PCIE */
-module_param(low_power_mode_enable, int, 0);
+module_param(low_power_mode_enable, int, 0440);
 MODULE_PARM_DESC(low_power_mode_enable, "0/1: Disable/Enable Low Power Mode");
 
-module_param(wakelock_timeout, int, 0);
+module_param(wakelock_timeout, int, 0440);
 MODULE_PARM_DESC(wakelock_timeout, "set wakelock_timeout value (ms)");
 
-module_param(dev_cap_mask, uint, 0);
+module_param(dev_cap_mask, uint, 0440);
 MODULE_PARM_DESC(dev_cap_mask, "Device capability mask");
-module_param(net_rx, int, 0);
+module_param(net_rx, int, 0440);
 MODULE_PARM_DESC(net_rx,
 		 "0: use netif_rx_ni in rx; 1: use netif_receive_skb in rx");
-module_param(amsdu_deaggr, int, 0);
+module_param(amsdu_deaggr, int, 0440);
 MODULE_PARM_DESC(amsdu_deaggr,
 		 "0: default; 1: Try to avoid buf copy in amsud deaggregation");
 
 #ifdef SDIO
-module_param(sdio_rx_aggr, int, 0);
+module_param(sdio_rx_aggr, int, 0440);
 MODULE_PARM_DESC(sdio_rx_aggr,
 		 "1: Enable SDIO rx aggr; 0: Disable SDIO rx aggr");
 #endif
 
-module_param(pmic, int, 0);
+module_param(pmic, int, 0440);
 MODULE_PARM_DESC(
 	pmic,
 	"1: Send pmic configure cmd to firmware; 0: No pmic configure cmd sent to firmware");
@@ -2467,18 +2467,18 @@ MODULE_PARM_DESC(
 	antcfg,
 	"0:default; SD8887/SD8987-[1:Tx/Rx antenna 1, 2:Tx/Rx antenna 2, 0xffff:enable antenna diversity];SD8897/SD8997-[Bit0:Rx Path A, Bit1:Rx Path B, Bit 4:Tx Path A, Bit 5:Tx Path B];9098/9097-[Bit 0: 2G Tx/Rx path A, Bit 1: 2G Tx/Rx path B,Bit 8: 5G Tx/Rx path A, Bit 9: 5G Tx/Rx path B]");
 
-module_param(uap_oper_ctrl, uint, 0);
+module_param(uap_oper_ctrl, uint, 0440);
 MODULE_PARM_DESC(uap_oper_ctrl, "0:default; 0x20001:uap restarts on channel 6");
 
 module_param(hs_wake_interval, int, 0660);
 MODULE_PARM_DESC(
 	hs_wake_interval,
 	"Host sleep wakeup interval,it will round to nearest multiple dtim*beacon_period in fw");
-module_param(indication_gpio, int, 0);
+module_param(indication_gpio, int, 0440);
 MODULE_PARM_DESC(
 	indication_gpio,
 	"GPIO to indicate wakeup source; high four bits: level for normal wakeup; low four bits: GPIO pin number.");
-module_param(disconnect_on_suspend, int, 0);
+module_param(disconnect_on_suspend, int, 0440);
 MODULE_PARM_DESC(
 	disconnect_on_suspend,
 	"1: Enable disconnect wifi on suspend; 0: Disable disconnect wifi on suspend");
@@ -2487,74 +2487,73 @@ MODULE_PARM_DESC(
 	hs_mimo_switch,
 	"Dynamic MIMO-SISO switch during host sleep; 0: disable (default), 1: enable");
 
-module_param(indrstcfg, int, 0);
+module_param(indrstcfg, int, 0440);
 MODULE_PARM_DESC(
 	indrstcfg,
 	"Independent reset configuration; high byte: GPIO pin number; low byte: IR mode");
 
-module_param(fixed_beacon_buffer, int, 0);
-MODULE_PARM_DESC(
-	fixed_beacon_buffer,
-	"0: allocate default buffer size; 1: allocate max buffer size.");
+module_param(fixed_beacon_buffer, int, 0440);
+MODULE_PARM_DESC(fixed_beacon_buffer,
+		 "0: allocate default buffer size; 1: allocate max buffer size.");
 
 #ifdef WIFI_DIRECT_SUPPORT
-module_param(GoAgeoutTime, int, 0);
+module_param(GoAgeoutTime, int, 0440);
 MODULE_PARM_DESC(GoAgeoutTime,
 		 "0: use default ageout time; set Go age out time (TU 100ms)");
 #endif
 
-module_param(gtk_rekey_offload, int, 0);
+module_param(gtk_rekey_offload, int, 0440);
 MODULE_PARM_DESC(
 	gtk_rekey_offload,
 	"0: disable gtk_rekey_offload; 1: enable gtk_rekey_offload (default); 2: enable gtk_rekey_offload in suspend mode only;");
 
-module_param(multi_dtim, ushort, 0);
+module_param(multi_dtim, ushort, 0440);
 MODULE_PARM_DESC(multi_dtim, "DTIM interval");
 
-module_param(inact_tmo, ushort, 0);
+module_param(inact_tmo, ushort, 0440);
 MODULE_PARM_DESC(inact_tmo, "IEEE ps inactivity timout value");
 
-module_param(napi, int, 0);
+module_param(napi, int, 0440);
 MODULE_PARM_DESC(napi, "1: enable napi api; 0: disable napi");
 
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
-module_param(dfs_offload, int, 0);
+module_param(dfs_offload, int, 0440);
 MODULE_PARM_DESC(dfs_offload, "1: enable dfs offload; 0: disable dfs offload.");
 #endif
 
 #ifdef UAP_SUPPORT
-module_param(uap_max_sta, int, 0);
+module_param(uap_max_sta, int, 0440);
 MODULE_PARM_DESC(uap_max_sta, "Maximum station number for UAP/GO.");
-module_param(wacp_mode, int, 0);
+module_param(wacp_mode, int, 0440);
 MODULE_PARM_DESC(
 	wacp_mode,
 	"WACP mode for UAP/GO 0: WACP_MODE_DEFAULT; 1: WACP_MODE_1; 2: WACP_MODE_2");
 #endif
 #if defined(STA_CFG80211) || defined(UAP_CFG80211)
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
-module_param(host_mlme, int, 0);
+module_param(host_mlme, int, 0440);
 MODULE_PARM_DESC(host_mlme,
 		 "1: Enable Host MLME Support; 0: Disable Host MLME support");
 #endif
 #endif
 
 #if defined(STA_CFG80211) || defined(UAP_CFG80211)
-module_param(disable_regd_by_driver, int, 0);
+module_param(disable_regd_by_driver, int, 0440);
 MODULE_PARM_DESC(
 	disable_regd_by_driver,
 	"0: reg domain set by driver enable(default); 1: reg domain set by driver disable");
 module_param(reg_alpha2, charp, 0660);
 MODULE_PARM_DESC(reg_alpha2, "Regulatory alpha2");
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
-module_param(country_ie_ignore, int, 0);
+module_param(country_ie_ignore, int, 0440);
 MODULE_PARM_DESC(
 	country_ie_ignore,
 	"0: Follow countryIE from AP and beacon hint enable; 1: Ignore countryIE from AP and beacon hint disable");
-module_param(beacon_hints, int, 0);
+module_param(beacon_hints, int, 0440);
 MODULE_PARM_DESC(beacon_hints,
 		 "0: enable beacon hints(default); 1: disable beacon hints");
 #endif
 #endif
 
-module_param(dfs53cfg, int, 0);
+module_param(dfs53cfg, int, 0440);
 MODULE_PARM_DESC(dfs53cfg, "0: fw default; 1: new w53 dfs; 2: old w53 dfs");
