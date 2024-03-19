@@ -767,14 +767,6 @@ u16 woal_select_queue(struct net_device *dev, struct sk_buff *skb);
 #endif
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
-extern int wifi_setup_dt(void);
-extern void wifi_teardown_dt(void);
-#endif
-
-extern void sdio_reinit(void);
-extern void extern_wifi_set_enable(int is_on);
-
 static moal_handle *reset_handle;
 /** Hang workqueue */
 static struct workqueue_struct *hang_workqueue;

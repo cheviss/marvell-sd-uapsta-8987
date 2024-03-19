@@ -440,6 +440,7 @@ int woal_sdio_probe(struct sdio_func *func, const struct sdio_device_id *id)
 	int ret = MLAN_STATUS_SUCCESS;
 	struct sdio_mmc_card *card = NULL;
 	t_u16 card_type = 0;
+	unsigned char i;
 
 	ENTER();
 
@@ -472,36 +473,51 @@ int woal_sdio_probe(struct sdio_func *func, const struct sdio_device_id *id)
 	if (!func->enable_timeout)
 		func->enable_timeout = 200;
 #endif
-	sdio_claim_host(func);
-	ret = sdio_enable_func(func);
-	if (ret) {
+
+	for (i = 0; i < 5; i++) {
+		sdio_claim_host(func);
+		ret = sdio_enable_func(func);
+		if (ret) {
+			sdio_release_host(func);
+			PRINTM(MFATAL, "sdio_enable_func() failed: ret=%d\n", ret);
+			ret = -EIO;
+			goto err;
+		}
 		sdio_release_host(func);
-		PRINTM(MFATAL, "sdio_enable_func() failed: ret=%d\n", ret);
-		ret = -EIO;
-		goto err;
-	}
-	sdio_release_host(func);
 
-	card_type = woal_update_card_type(card);
-	if (!card_type) {
-		PRINTM(MERROR, "sdmmc probe: woal_update_card_type() failed\n");
-		ret = MLAN_STATUS_FAILURE;
-		goto err;
-	}
+		card_type = woal_update_card_type(card);
+		if (!card_type) {
+			PRINTM(MERROR, "sdmmc probe: woal_update_card_type() failed\n");
+			ret = MLAN_STATUS_FAILURE;
+			goto err;
+		}
 
-	if (NULL ==
-	    woal_add_card(card, &card->func->dev, &sdiommc_ops, card_type)) {
-		PRINTM(MERROR, "woal_add_card failed\n");
-		ret = MLAN_STATUS_FAILURE;
-		goto err;
-	}
-
+		if (NULL !=
+			woal_add_card(card, &card->func->dev, &sdiommc_ops, card_type)) {
 #ifdef IMX_SUPPORT
-	woal_regist_oob_wakeup_irq(card->handle);
+			woal_regist_oob_wakeup_irq(card->handle);
 #endif /* IMX_SUPPORT */
+			goto out;
+		}
 
-	LEAVE();
-	return ret;
+		// No need to print retrying when we're not going to retry, no
+		// need to toggle reset on the WiFi chip since we're giving up.
+		if (i >= 4)
+			continue;
+
+		PRINTM(MERROR, "woal_add_card failed %u times, retrying...\n",
+		       i + 1);
+
+		extern_wifi_set_enable(0);
+		msleep(100);
+		extern_wifi_set_enable(1);
+		msleep(10);
+		sdio_reinit();
+		msleep(20);
+	}
+
+	PRINTM(MFATAL, "woal_add_card failed %u times, aborting..\n", i);
+	ret = MLAN_STATUS_FAILURE;
 err:
 	kfree(card);
 	sdio_claim_host(func);

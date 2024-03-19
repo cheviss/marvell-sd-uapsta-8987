@@ -3432,4 +3432,13 @@ void woal_disable_oob_wakeup_irq(moal_handle *handle);
 void woal_enable_oob_wakeup_irq(moal_handle *handle);
 irqreturn_t woal_oob_wakeup_irq_handler(int irq, void *priv);
 #endif /* IMX_SUPPORT */
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+extern int wifi_setup_dt(void);
+extern void wifi_teardown_dt(void);
+#endif
+
+extern void sdio_reinit(void);
+extern void extern_wifi_set_enable(int is_on);
+
 #endif /* _MOAL_MAIN_H */
