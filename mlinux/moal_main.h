@@ -209,6 +209,14 @@ Change log:
 #endif
 
 /**
+ * Linux kernel later 5.16 use new macro
+ */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0)
+#define PDE_DATA(i)	pde_data(i)
+#define netif_rx_ni(x) netif_rx(x)
+#endif
+
+/**
  * interface name
  */
 #define default_mlan_name "wlan%d"

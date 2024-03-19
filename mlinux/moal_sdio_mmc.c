@@ -1179,7 +1179,11 @@ static void woal_sdiommc_unregister_dev(moal_handle *handle)
 		sdio_release_irq(card->func);
 		sdio_disable_func(card->func);
 		if (handle->driver_status)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
 			mmc_hw_reset(func->card->host);
+#else
+			mmc_hw_reset(func->card);
+#endif
 		sdio_release_host(card->func);
 
 		sdio_set_drvdata(card->func, NULL);
@@ -2433,7 +2437,11 @@ void woal_sdio_reset_hw(moal_handle *handle)
 	sdio_claim_host(func);
 	sdio_release_irq(card->func);
 	sdio_disable_func(card->func);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
 	mmc_hw_reset(func->card->host);
+#else
+	mmc_hw_reset(func->card);
+#endif
 #ifdef MMC_QUIRK_BLKSZ_FOR_BYTE_MODE
 	/* The byte mode patch is available in kernel MMC driver
 	 * which fixes one issue in MP-A transfer.
