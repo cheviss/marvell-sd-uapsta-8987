@@ -767,6 +767,14 @@ u16 woal_select_queue(struct net_device *dev, struct sk_buff *skb);
 #endif
 #endif
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+extern int wifi_setup_dt(void);
+extern void wifi_teardown_dt(void);
+#endif
+
+extern void sdio_reinit(void);
+extern void extern_wifi_set_enable(int is_on);
+
 static moal_handle *reset_handle;
 /** Hang workqueue */
 static struct workqueue_struct *hang_workqueue;
@@ -10254,6 +10262,16 @@ static int woal_init_module(void)
 	int index = 0;
 
 	ENTER();
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+	wifi_setup_dt();
+	msleep(10);
+#endif
+	extern_wifi_set_enable(0);
+	msleep(10);
+	extern_wifi_set_enable(1);
+	msleep(10);
+	sdio_reinit();
+	msleep(20);
 
 	PRINTM(MMSG, "wlan: Loading MWLAN driver\n");
 	/* Init the wlan_private pointer array first */
@@ -10513,6 +10531,11 @@ static int __init mfg_mode_setup(char *str)
 	if (val > 0)
 		mfg_mode = 1;
 	PRINTM(MMSG, "mfg_mode=%d\n", mfg_mode);
+	extern_wifi_set_enable(0);
+	msleep(20);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0))
+	wifi_teardown_dt();
+#endif
 	return 1;
 }
 __setup("mfg_mode=", mfg_mode_setup);
