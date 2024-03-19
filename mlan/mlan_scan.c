@@ -588,6 +588,10 @@ static t_u8 wlan_scan_create_channel_list(
 					.chan_scan_mode.passive_scan = MFALSE;
 			}
 
+			/* always disable channel-filter */
+			pscan_chan_list[chan_idx].chan_scan_mode.
+				disable_chan_filt = MTRUE;
+
 			pscan_chan_list[chan_idx].chan_number =
 				(t_u8)cfp->channel;
 			PRINTM(MCMD_D,
@@ -1515,6 +1519,10 @@ static mlan_status wlan_scan_setup_scan_config(
 				(pscan_chan_list + chan_list_idx)
 					->chan_scan_mode.passive_scan = MFALSE;
 			}
+
+			/* always disable channel-filter */
+			(pscan_chan_list + chan_list_idx)
+					->chan_scan_mode.disable_chan_filt = MTRUE;
 
 			if (puser_scan_in->chan_list[chan_idx].scan_time) {
 				scan_dur = (t_u16)puser_scan_in
@@ -6101,6 +6109,10 @@ wlan_bgscan_create_channel_list(mlan_private *pmpriv,
 					.chan_scan_mode.passive_scan = MFALSE;
 			}
 
+			/* always disable channel-filter */
+			tlv_chan_list->chan_scan_param[chan_idx].
+				chan_scan_mode.disable_chan_filt = MTRUE;
+
 			tlv_chan_list->chan_scan_param[chan_idx].chan_number =
 				(t_u8)cfp->channel;
 		}
@@ -6312,6 +6324,11 @@ mlan_status wlan_cmd_bgscan_config(mlan_private *pmpriv,
 						pmadapter->specific_scan_time;
 				}
 			}
+
+			/* always disable channel-filter */
+			tlv_chan_list->chan_scan_param[chan_idx].
+				chan_scan_mode.disable_chan_filt = MTRUE;
+
 			tlv_chan_list->chan_scan_param[chan_num].min_scan_time =
 				wlan_cpu_to_le16(scan_dur);
 			tlv_chan_list->chan_scan_param[chan_num].max_scan_time =
