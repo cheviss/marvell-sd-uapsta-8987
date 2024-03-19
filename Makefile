@@ -120,6 +120,7 @@ CONFIG_USERSPACE_32BIT_OVER_KERNEL_64BIT=n
 MODEXT = ko
 ccflags-y += -I$(PWD)/mlan
 ccflags-y += -DLINUX
+ccflags-y += -Wno-stringop-truncation -Wno-stringop-overflow
 
 
 
