@@ -2387,6 +2387,7 @@ void woal_host_mlme_process_assoc_resp(moal_private *priv,
 					spin_unlock_irqrestore(
 						&priv->connect_lock, flags);
 
+					mutex_lock(&priv->wdev->mtx);
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
 					cfg80211_rx_assoc_resp(
 						priv->netdev, bss,
@@ -2413,6 +2414,7 @@ void woal_host_mlme_process_assoc_resp(moal_private *priv,
 #endif
 #endif
 #endif
+					mutex_unlock(&priv->wdev->mtx);
 				}
 			}
 		}
