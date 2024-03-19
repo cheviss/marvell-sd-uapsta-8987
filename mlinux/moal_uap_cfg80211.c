@@ -2140,6 +2140,12 @@ int woal_cfg80211_del_virtual_intf(struct wiphy *wiphy,
 			}
 		}
 		if (vir_priv && vir_priv->bss_type == MLAN_BSS_TYPE_UAP) {
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 19, 0)
+			woal_cfg80211_del_beacon(wiphy, dev, 0);
+			memset(&vir_priv->wdev->u.ap.preset_chandef, 0,
+			       sizeof(vir_priv->wdev->u.ap.preset_chandef));
+			vir_priv->wdev->u.ap.ssid_len = 0;
+#else
 			woal_cfg80211_del_beacon(wiphy, dev);
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 0, 0)
 			vir_priv->wdev->beacon_interval = 0;
@@ -2149,6 +2155,7 @@ int woal_cfg80211_del_virtual_intf(struct wiphy *wiphy,
 #endif
 #endif
 			vir_priv->wdev->ssid_len = 0;
+#endif
 			PRINTM(MMSG, "Skip del UAP virtual interface %s",
 			       dev->name);
 		}
@@ -2417,6 +2424,19 @@ done:
 	return ret;
 }
 
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 19, 0)
+/**
+ * @brief reset AP or GO parameters
+ *
+ * @param wiphy           A pointer to wiphy structure
+ * @param dev             A pointer to net_device structure
+ * @param link_id         the link ID for MLO, must be 0 for non-MLO
+ *
+ * @return                0 -- success, otherwise fail
+ */
+int
+woal_cfg80211_del_beacon(struct wiphy *wiphy, struct net_device *dev, unsigned int link_id)
+#else
 /**
  * @brief reset AP or GO parameters
  *
@@ -2426,6 +2446,7 @@ done:
  * @return                0 -- success, otherwise fail
  */
 int woal_cfg80211_del_beacon(struct wiphy *wiphy, struct net_device *dev)
+#endif
 {
 	moal_private *priv = (moal_private *)woal_get_netdev_priv(dev);
 	int ret = 0;
@@ -3154,7 +3175,11 @@ woal_notify_channel_work(struct work_struct *work)
 	mutex_lock(&priv->notify_chandef_lock);
 	mutex_lock(&priv->netdev->ieee80211_ptr->mtx);
 
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 19, 0)
+	cfg80211_ch_switch_notify(priv->netdev, &priv->notify_chandef, 0);
+#else
 	cfg80211_ch_switch_notify(priv->netdev, &priv->notify_chandef);
+#endif
 
 	mutex_unlock(&priv->netdev->ieee80211_ptr->mtx);
 	mutex_unlock(&priv->notify_chandef_lock);

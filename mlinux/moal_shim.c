@@ -2872,7 +2872,11 @@ mlan_status moal_recv_event(t_void *pmoal, pmlan_event pmevent)
 			PRINTM(MMSG,
 			       "Channel Under Nop: notify cfg80211 new channel=%d\n",
 			       priv->channel);
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 19, 0)
+			cfg80211_ch_switch_notify(priv->netdev, &priv->chan, 0);
+#else
 			cfg80211_ch_switch_notify(priv->netdev, &priv->chan);
+#endif
 			priv->chan_under_nop = MFALSE;
 		}
 #endif
@@ -3196,7 +3200,11 @@ mlan_status moal_recv_event(t_void *pmoal, pmlan_event pmevent)
 						PRINTM(MEVENT,
 						       "HostMlme %s: Receive deauth/disassociate\n",
 						       priv->netdev->name);
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 19, 0)
+						if (!priv->wdev->connected) {
+#else
 						if (!priv->wdev->current_bss) {
+#endif
 							PRINTM(MEVENT,
 							       "HostMlme: Drop deauth/disassociate, current_bss = null\n");
 							break;
