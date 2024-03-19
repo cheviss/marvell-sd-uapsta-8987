@@ -3746,6 +3746,34 @@ void woal_regulatory_work_queue(struct work_struct *work)
 }
 #endif
 
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
+/**
+ * @brief Add NO_IR flag to enabled DFS channels.
+ *
+ * @param wiphy           A pointer to wiphy structure
+ *
+ * @return                N/A
+ */
+static void woal_reg_apply_radar_flags(struct wiphy *wiphy)
+{
+	struct ieee80211_supported_band *sband;
+	struct ieee80211_channel *chan;
+	unsigned int i;
+
+	if (!wiphy->bands[NL80211_BAND_5GHZ])
+		return;
+
+	sband = wiphy->bands[NL80211_BAND_5GHZ];
+
+	for (i = 0; i < sband->n_channels; i++) {
+		chan = &sband->channels[i];
+		if ((!(chan->flags & IEEE80211_CHAN_DISABLED)) &&
+		    (chan->flags & IEEE80211_CHAN_RADAR))
+			chan->flags |= IEEE80211_CHAN_NO_IR;
+	}
+}
+#endif
+
 /**
  * @brief Request the driver to change regulatory domain
  *
@@ -3808,6 +3836,8 @@ woal_cfg80211_reg_notifier(struct wiphy *wiphy,
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
 	if (moal_extflg_isset(handle, EXT_DFS_OFFLOAD))
 		woal_update_radar_chans_dfs_state(wiphy);
+
+	woal_reg_apply_radar_flags(wiphy);
 #endif
 	memset(region, 0, sizeof(region));
 	moal_memcpy_ext(priv->phandle, region, request->alpha2,
