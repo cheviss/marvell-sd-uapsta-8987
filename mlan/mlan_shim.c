@@ -415,6 +415,7 @@ mlan_status mlan_register(pmlan_device pmdevice, t_void **ppmlan_adapter)
 #ifdef MFG_CMD_SUPPORT
 	pmadapter->init_para.mfg_mode = pmdevice->mfg_mode;
 #endif
+	pmadapter->init_para.load_timeout = pmdevice->load_timeout;
 	pmadapter->init_para.auto_ds = pmdevice->auto_ds;
 	pmadapter->init_para.ext_scan = pmdevice->ext_scan;
 	pmadapter->init_para.ps_mode = pmdevice->ps_mode;

@@ -2242,7 +2242,14 @@ static mlan_status wlan_sdio_dnld_fw(pmlan_adapter pmadapter,
 		}
 #endif
 	}
-	poll_num = MAX_FIRMWARE_POLL_TRIES;
+
+	/* Custom wait period if specified, but not less than the default */
+	if (pmadapter && pmadapter->init_para.load_timeout >= 100) {
+		poll_num = pmadapter->init_para.load_timeout / 100;
+	}
+	if (poll_num < MAX_FIRMWARE_POLL_TRIES)
+		poll_num = MAX_FIRMWARE_POLL_TRIES;
+
 	/* Check if other interface is downloading */
 	ret = wlan_sdio_check_winner_status(pmadapter, &winner);
 	if (ret == MLAN_STATUS_FAILURE) {
@@ -2270,7 +2277,8 @@ poll_fw:
 	/* Check if the firmware is downloaded successfully or not */
 	ret = wlan_sdio_check_fw_status(pmadapter, poll_num);
 	if (ret != MLAN_STATUS_SUCCESS) {
-		PRINTM(MFATAL, "FW failed to be active in time!\n");
+		PRINTM(MFATAL, "FW failed to be active in time! Timeout is %d ms\n",
+			   poll_num * 100);
 		ret = MLAN_STATUS_FAILURE;
 		LEAVE();
 		return ret;

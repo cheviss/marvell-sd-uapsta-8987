@@ -507,6 +507,8 @@ int woal_sdio_probe(struct sdio_func *func, const struct sdio_device_id *id)
 		PRINTM(MERROR, "woal_add_card failed %u times, retrying...\n",
 		       i + 1);
 
+		woal_set_load_timeout(woal_get_load_timeout() > 0 ?
+				woal_get_load_timeout() * 125 / 100 : 1800);
 		extern_wifi_set_enable(0);
 		msleep(100);
 		extern_wifi_set_enable(1);

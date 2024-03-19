@@ -1814,6 +1814,9 @@ mlan_status woal_init_sw(moal_handle *handle)
 #ifdef MFG_CMD_SUPPORT
 	device.mfg_mode = (t_u32)handle->params.mfg_mode;
 #endif
+	if (handle->params.load_timeout)
+		device.load_timeout = (t_u32)handle->params.load_timeout;
+
 #ifdef DEBUG_LEVEL1
 	device.drvdbg = drvdbg;
 #endif

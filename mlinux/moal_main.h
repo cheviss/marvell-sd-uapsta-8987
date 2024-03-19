@@ -1837,6 +1837,7 @@ typedef struct _moal_mod_para {
 	t_u16 inact_tmo;
 	char *reg_alpha2;
 	int dfs53cfg;
+	int load_timeout;
 } moal_mod_para;
 
 void woal_tp_acnt_timer_func(void *context);
@@ -2963,6 +2964,10 @@ int woal_reg_rx_mgmt_ind(moal_private *priv, t_u16 action,
 /** Set driver debug bit masks */
 int woal_set_drvdbg(moal_private *priv, t_u32 drv_dbg);
 #endif
+
+/* Get/override firmware download timeout */
+int woal_get_load_timeout(void);
+void woal_set_load_timeout(int timeout);
 
 mlan_status woal_set_get_tx_bf_cap(moal_private *priv, t_u16 action,
 				   t_u32 *tx_bf_cap);

@@ -1863,6 +1863,8 @@ typedef struct _mlan_init_para {
 	/** MFG mode */
 	t_u32 mfg_mode;
 #endif
+    /** FW load timeout */
+	t_u32 load_timeout;
 #ifdef SDIO
 	/** SDIO interrupt mode (0: INT_MODE_SDIO, 1: INT_MODE_GPIO) */
 	t_u32 int_mode;

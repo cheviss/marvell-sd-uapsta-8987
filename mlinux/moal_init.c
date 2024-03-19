@@ -42,6 +42,19 @@ static char *mod_para;
 int mfg_mode;
 #endif
 
+/** FW load timeout */
+int load_timeout;
+
+int woal_get_load_timeout()
+{
+	return load_timeout;
+}
+
+void woal_set_load_timeout(int timeout)
+{
+	load_timeout = timeout;
+}
+
 #if defined(SDIO)
 /** SDIO interrupt mode (0: INT_MODE_SDIO, 1: INT_MODE_GPIO) */
 static int intmode = INT_MODE_SDIO;
@@ -1357,6 +1370,11 @@ static void woal_setup_module_param(moal_handle *handle, moal_mod_para *params)
 	if (params)
 		handle->params.mfg_mode = params->mfg_mode;
 #endif
+
+	handle->params.load_timeout = load_timeout;
+	if (params)
+		handle->params.load_timeout = params->load_timeout;
+
 	handle->params.drv_mode = drv_mode;
 	if (params)
 		handle->params.drv_mode = params->drv_mode;
@@ -1815,6 +1833,12 @@ void woal_init_from_dev_tree(void)
 			}
 		}
 #endif
+		else if (!strncmp(prop->name, "load_timeout", strlen("load_timeout"))) {
+			if (!of_property_read_u32(dt_node, prop->name, &data)) {
+				PRINTM(MIOCTL, "load_timeout=0x%x\n", data);
+				load_timeout = data;
+			}
+		}
 		else if (!strncmp(prop->name, "mac_addr", strlen("mac_addr"))) {
 			if (!of_property_read_string(dt_node, prop->name,
 						     &string_data)) {
@@ -2292,6 +2316,9 @@ module_param(mfg_mode, int, 0660);
 MODULE_PARM_DESC(mfg_mode,
 		 "0: Download normal firmware; 1: Download MFG firmware");
 #endif /* MFG_CMD_SUPPORT */
+module_param(load_timeout, int, 0660);
+MODULE_PARM_DESC(load_timeout,
+		 "Custom firmware download timeout, ms");
 module_param(drv_mode, int, 0660);
 MODULE_PARM_DESC(drv_mode, "Bit 0: STA; Bit 1: uAP; Bit 2: WIFIDIRECT");
 

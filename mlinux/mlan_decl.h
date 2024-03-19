@@ -2109,6 +2109,8 @@ typedef struct _mlan_device {
 	/** MFG mode */
 	t_u32 mfg_mode;
 #endif
+    /** FW load timeout */
+	t_u32 load_timeout;
 #ifdef PCIE
 	t_u16 ring_size;
 #endif
