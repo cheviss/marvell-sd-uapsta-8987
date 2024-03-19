@@ -810,6 +810,9 @@ void woal_send_fw_dump_complete_event(moal_private *priv)
  */
 static void woal_hang_work_queue(struct work_struct *work)
 {
+	struct sdio_mmc_card *card = (struct sdio_mmc_card *)reset_handle->card;
+	const struct sdio_device_id *device_id = card->device_id;
+	struct sdio_func *func = card->func;
 	int i;
 	moal_private *priv;
 	int cfg80211_wext = 0;
@@ -903,9 +906,37 @@ static void woal_hang_work_queue(struct work_struct *work)
 #endif
 #endif
 	}
+#ifdef SDIO_SUSPEND_RESUME
+#ifdef MMC_PM_KEEP_POWER
+	if (reset_handle->is_suspended == MTRUE) {
+		woal_sdio_resume(&func->dev);
+	}
+#endif /* MMC_PM_KEEP_POWER */
+#endif /* SDIO_SUSPEND_RESUME */
+
+	woal_sdio_remove(func);
+
+	/* power cycle the adapter */
+	extern_wifi_set_enable(0);
+	msleep(10);
+	extern_wifi_set_enable(1);
+	msleep(10);
+	sdio_reinit();
+	msleep(20);
+
+	sdio_claim_host(func);
+	mmc_hw_reset(func->card->host);
+	sdio_release_host(func);
+
 	reset_handle = NULL;
+
+	/* Force FW reload during probe */
+	fw_reload = FW_RELOAD_SDIO_INBAND_RESET;
+	woal_sdio_probe(func, device_id);
 	LEAVE();
 }
+
+static DECLARE_WORK(hang_work, woal_hang_work_queue);
 
 /**
  *  @brief This function process FW hang
@@ -916,11 +947,19 @@ static void woal_hang_work_queue(struct work_struct *work)
  */
 void woal_process_hang(moal_handle *handle)
 {
+	/* This function should be the equivalent of card_reset from upstream
+	 * mwifiex driver */
 	ENTER();
+
 	if (reset_handle == NULL) {
 		PRINTM(MMSG, "Start to process hanging\n");
 		reset_handle = handle;
-		queue_work(hang_workqueue, &hang_work);
+		/* The hang process needs to be scheduled on a workqueue from
+		 * the kernel and not from the driver as the driver's workqueues
+		 * are flushed and destroyed in the hang process and the kernel
+		 * will complain if a workqueue currently scheduled is being
+		 * flushed. */
+		schedule_work(&hang_work);
 #define WAKE_LOCK_HANG 5000
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 5, 0)
 		__pm_wakeup_event(&reset_handle->ws, WAKE_LOCK_HANG);
@@ -10299,22 +10338,6 @@ static int woal_init_module(void)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
 	/* For kernel less than 2.6.14 name can not be greater than 10
 	   characters */
-	hang_workqueue = create_workqueue("MOAL_HANG_WORKQ");
-#else
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 36)
-	hang_workqueue =
-		alloc_workqueue("MOAL_HANG_WORK_QUEUE",
-				WQ_HIGHPRI | WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
-#else
-	hang_workqueue = create_workqueue("MOAL_HANG_WORK_QUEUE");
-#endif
-#endif
-	MLAN_INIT_WORK(&hang_work, woal_hang_work_queue);
-
-	/* Create workqueue for hang process */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
-	/* For kernel less than 2.6.14 name can not be greater than 10
-	   characters */
 	register_workqueue = create_workqueue("MOAL_REGISTER_WORKQ");
 #else
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 36)
@@ -10504,11 +10527,6 @@ exit_sem_err:
 	/* Unregister from bus */
 	woal_bus_unregister();
 	PRINTM(MMSG, "wlan: Driver unloaded\n");
-	if (hang_workqueue) {
-		flush_workqueue(hang_workqueue);
-		destroy_workqueue(hang_workqueue);
-		hang_workqueue = NULL;
-	}
 	if (register_workqueue) {
 		flush_workqueue(register_workqueue);
 		destroy_workqueue(register_workqueue);

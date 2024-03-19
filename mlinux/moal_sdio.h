@@ -179,10 +179,15 @@ struct sdio_mmc_card {
 	moal_handle *handle;
 	/** saved host clock value */
 	unsigned int host_clock;
+	const struct sdio_device_id *device_id;
 };
 void woal_sdio_reset_hw(moal_handle *handle);
 #endif /* SDIO_MMC */
 
 /** cmd52 read write */
 int woal_sdio_read_write_cmd52(moal_handle *handle, int func, int reg, int val);
+
+void woal_sdio_remove(struct sdio_func *func);
+int woal_sdio_probe(struct sdio_func *func, const struct sdio_device_id *id);
+
 #endif /* _MOAL_SDIO_H */

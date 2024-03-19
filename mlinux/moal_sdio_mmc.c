@@ -122,8 +122,6 @@ static const struct sdio_device_id wlan_ids[] = {
 
 MODULE_DEVICE_TABLE(sdio, wlan_ids);
 
-int woal_sdio_probe(struct sdio_func *func, const struct sdio_device_id *id);
-void woal_sdio_remove(struct sdio_func *func);
 #ifdef SDIO
 static void woal_sdiommc_reg_dbg(pmoal_handle handle);
 #endif
@@ -456,6 +454,7 @@ int woal_sdio_probe(struct sdio_func *func, const struct sdio_device_id *id)
 	}
 
 	card->func = func;
+	card->device_id = id;
 
 #ifdef MMC_QUIRK_BLKSZ_FOR_BYTE_MODE
 	/* The byte mode patch is available in kernel MMC driver
