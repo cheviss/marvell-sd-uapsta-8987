@@ -604,6 +604,9 @@ install: default
 	echo $(INSTALLDIR)
 	echo "MX Driver Installed"
 
+modules_install:
+    $(MAKE) -C $(KERNELDIR) M=$(PWD) modules_install
+
 distclean:
 	-find . -name "*.o" -exec rm {} \;
 	-find . -name "*.orig" -exec rm {} \;
