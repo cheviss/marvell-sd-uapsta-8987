@@ -211,7 +211,7 @@ Change log:
 /**
  * interface name
  */
-#define default_mlan_name "mlan%d"
+#define default_mlan_name "wlan%d"
 #define default_uap_name "uap%d"
 #define default_wfd_name "wfd%d"
 #define default_nan_name "nan%d"
