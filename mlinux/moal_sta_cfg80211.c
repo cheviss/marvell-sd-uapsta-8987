@@ -1772,6 +1772,7 @@ static void woal_save_assoc_params(moal_private *priv,
 				   struct cfg80211_assoc_request *req,
 				   mlan_ssid_bssid *ssid_bssid)
 {
+	gfp_t flag;
 	ENTER();
 
 	priv->assoc_bss = req->bss;
@@ -1787,7 +1788,8 @@ static void woal_save_assoc_params(moal_private *priv,
 			req->bss->bssid, MLAN_MAC_ADDR_LENGTH,
 			MLAN_MAC_ADDR_LENGTH);
 	if (req->ie && req->ie_len) {
-		priv->sme_current.ie = kzalloc(req->ie_len, GFP_KERNEL);
+		flag = (in_atomic() || irqs_disabled())? GFP_ATOMIC : GFP_KERNEL;
+		priv->sme_current.ie = kzalloc(req->ie_len, flag);
 		priv->sme_current.ie_len = req->ie_len;
 		moal_memcpy_ext(priv->phandle, (void *)priv->sme_current.ie,
 				req->ie, req->ie_len, priv->sme_current.ie_len);
