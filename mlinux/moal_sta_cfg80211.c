@@ -1579,6 +1579,8 @@ static int woal_process_country_ie(moal_private *priv, struct cfg80211_bss *bss)
 	int ret = 0;
 	mlan_ioctl_req *req = NULL;
 	mlan_ds_11d_cfg *cfg_11d = NULL;
+	mlan_ds_subband_set_t sub_band[MRVDRV_MAX_SUBBAND_802_11D];
+	t_u8 no_of_sub_band;
 	mlan_status status = MLAN_STATUS_SUCCESS;
 
 	ENTER();
@@ -1603,8 +1605,17 @@ static int woal_process_country_ie(moal_private *priv, struct cfg80211_bss *bss)
 	priv->phandle->country_code[0] = country_ie[2];
 	priv->phandle->country_code[1] = country_ie[3];
 	priv->phandle->country_code[2] = ' ';
+
+	country_ie_len -= COUNTRY_CODE_LEN;
+	no_of_sub_band = MIN(MRVDRV_MAX_SUBBAND_802_11D,
+					     (country_ie_len /
+					      sizeof(struct ieee80211_country_ie_triplet)));
+	memcpy((u8 *)sub_band, &country_ie[2] + COUNTRY_CODE_LEN,
+			no_of_sub_band * sizeof(mlan_ds_subband_set_t));
+
+	rcu_read_unlock();
+
 	if (is_cfg80211_special_region_code(priv->phandle->country_code)) {
-		rcu_read_unlock();
 		PRINTM(MIOCTL, "Skip special region code in CountryIE");
 		LEAVE();
 		return 0;
@@ -1616,7 +1627,6 @@ static int woal_process_country_ie(moal_private *priv, struct cfg80211_bss *bss)
 	/* Allocate an IOCTL request buffer */
 	req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_11d_cfg));
 	if (req == NULL) {
-		rcu_read_unlock();
 		PRINTM(MERROR, "Fail to allocate mlan_ds_11d_cfg buffer\n");
 		ret = MLAN_STATUS_FAILURE;
 		goto done;
@@ -1637,21 +1647,16 @@ static int woal_process_country_ie(moal_private *priv, struct cfg80211_bss *bss)
 	/** IEEE80211_BAND_2GHZ or IEEE80211_BAND_5GHZ */
 	cfg_11d->param.domain_info.band = priv->phandle->band;
 
-	country_ie_len -= COUNTRY_CODE_LEN;
-	cfg_11d->param.domain_info.no_of_sub_band = MIN(
-		MRVDRV_MAX_SUBBAND_802_11D,
-		(country_ie_len / sizeof(struct ieee80211_country_ie_triplet)));
+	cfg_11d->param.domain_info.no_of_sub_band = no_of_sub_band;
 	moal_memcpy_ext(priv->phandle,
 			(u8 *)cfg_11d->param.domain_info.sub_band,
-			&country_ie[2] + COUNTRY_CODE_LEN,
-			cfg_11d->param.domain_info.no_of_sub_band *
-				sizeof(mlan_ds_subband_set_t),
+			(u8 *)sub_band,
+			no_of_sub_band * sizeof(mlan_ds_subband_set_t),
 			sizeof(cfg_11d->param.domain_info.sub_band));
 
 	PRINTM(MCMND, "11D: Country IE: %c%c band=%d no_of_sub_band=%d\n",
-	       country_ie[2], country_ie[3], priv->phandle->band,
-	       cfg_11d->param.domain_info.no_of_sub_band);
-	rcu_read_unlock();
+	       priv->phandle->country_code[0], priv->phandle->country_code[1],
+		   priv->phandle->band, cfg_11d->param.domain_info.no_of_sub_band);
 
 	/* Send domain info command to FW */
 	status = woal_request_ioctl(priv, req, MOAL_IOCTL_WAIT);
