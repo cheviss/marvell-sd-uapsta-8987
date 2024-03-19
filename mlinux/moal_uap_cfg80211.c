@@ -2236,7 +2236,9 @@ int woal_cfg80211_add_beacon(struct wiphy *wiphy, struct net_device *dev,
 
 #ifdef STA_CFG80211
 	/*** cancel pending scan */
-	woal_cancel_scan(priv, MOAL_IOCTL_WAIT);
+	// There is no reason for canceling scan on STA interface when
+	// taking up the UAP interface.
+	// woal_cancel_scan(priv, MOAL_IOCTL_WAIT);
 #endif
 
 	if (!params) {

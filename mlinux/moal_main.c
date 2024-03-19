@@ -5086,10 +5086,14 @@ int woal_close(struct net_device *dev)
 
 #ifdef STA_SUPPORT
 #ifdef STA_CFG80211
+	// If the network device to close is in STA mode, clear connection
+	// parameters and cancel scan.
+	// Don't cancel scan on STA interface when a device in UAP is closed.
 	if (IS_STA_CFG80211(cfg80211_wext) &&
-	    (priv->bss_type == MLAN_BSS_TYPE_STA))
+	    (priv->bss_type == MLAN_BSS_TYPE_STA)) {
 		woal_clear_conn_params(priv);
-	woal_cancel_scan(priv, MOAL_IOCTL_WAIT);
+		woal_cancel_scan(priv, MOAL_IOCTL_WAIT);
+	}
 
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 11, 0)
 	if (IS_STA_CFG80211(cfg80211_wext) && priv->wdev->current_bss) {
