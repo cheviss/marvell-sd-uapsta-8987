@@ -3118,9 +3118,10 @@ static void woal_switch_uap_channel(moal_private *priv, t_u8 wait_option)
 	priv->channel = uap_channel.channel;
 	moal_memcpy_ext(priv->phandle, &priv->chan, &priv->csa_chan,
 			sizeof(struct cfg80211_chan_def), sizeof(priv->chan));
-	mutex_lock(&priv->netdev->ieee80211_ptr->mtx);
-	cfg80211_ch_switch_notify(priv->netdev, &priv->chan);
-	mutex_unlock(&priv->netdev->ieee80211_ptr->mtx);
+	mutex_lock(&priv->notify_chandef_lock);
+	memcpy(&priv->notify_chandef, &priv->chan, sizeof(struct cfg80211_chan_def));
+	mutex_unlock(&priv->notify_chandef_lock);
+	schedule_work(&priv->notify_channel_work);
 	if (priv->uap_tx_blocked) {
 		if (!netif_carrier_ok(priv->netdev))
 			netif_carrier_on(priv->netdev);
@@ -3130,6 +3131,35 @@ static void woal_switch_uap_channel(moal_private *priv, t_u8 wait_option)
 done:
 	LEAVE();
 	return;
+}
+
+/**
+ *  @brief This workqueue function handles notification of channel switch
+ *
+ *  @param work    A pointer to work_struct
+ *
+ *  @return        N/A
+ */
+t_void
+woal_notify_channel_work(struct work_struct *work)
+{
+	moal_private *priv = container_of(work, moal_private, notify_channel_work);
+
+	ENTER();
+	if (priv->phandle->surprise_removed == MTRUE) {
+		LEAVE();
+		return;
+	}
+
+	mutex_lock(&priv->notify_chandef_lock);
+	mutex_lock(&priv->netdev->ieee80211_ptr->mtx);
+
+	cfg80211_ch_switch_notify(priv->netdev, &priv->notify_chandef);
+
+	mutex_unlock(&priv->netdev->ieee80211_ptr->mtx);
+	mutex_unlock(&priv->notify_chandef_lock);
+
+	LEAVE();
 }
 
 /**

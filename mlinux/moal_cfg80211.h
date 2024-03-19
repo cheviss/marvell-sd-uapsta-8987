@@ -454,6 +454,7 @@ void woal_process_cancel_chanrpt_event(moal_private *priv);
 
 void woal_cac_timer_func(void *context);
 void woal_csa_work_queue(struct work_struct *work);
+void woal_notify_channel_work(struct work_struct *work);
 #endif
 #endif /* UAP_CFG80211 */
 #if defined(UAP_CFG80211) || defined(STA_CFG80211)

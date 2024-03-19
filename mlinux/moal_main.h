@@ -1331,6 +1331,11 @@ struct _moal_private {
 	struct workqueue_struct *csa_workqueue;
 	/** csa work */
 	struct delayed_work csa_work;
+	/** Work for notifying channel switch to 80211 core from FW irq */
+	struct work_struct notify_channel_work;
+	/* Channel for switch channel work queue */
+	struct cfg80211_chan_def notify_chandef;
+	struct mutex notify_chandef_lock;
 #endif
 #endif
 #endif

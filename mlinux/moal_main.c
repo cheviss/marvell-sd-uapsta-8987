@@ -4394,6 +4394,8 @@ moal_private *woal_add_interface(moal_handle *handle, t_u8 bss_index,
 		goto error;
 	}
 	INIT_DELAYED_WORK(&priv->csa_work, woal_csa_work_queue);
+	INIT_WORK(&priv->notify_channel_work, woal_notify_channel_work);
+	mutex_init(&priv->notify_chandef_lock);
 #endif
 #endif
 #endif /*UAP_CFG80211 */
@@ -4499,6 +4501,9 @@ error:
 			priv->wdev = NULL;
 #ifdef UAP_CFG80211
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 12, 0)
+		cancel_work_sync(&priv->notify_channel_work);
+		mutex_destroy(&priv->notify_chandef_lock);
+
 		if (priv->csa_workqueue) {
 			destroy_workqueue(priv->csa_workqueue);
 			priv->csa_workqueue = NULL;
@@ -4614,6 +4619,9 @@ void woal_remove_interface(moal_handle *handle, t_u8 bss_index)
 		priv->wdev = NULL;
 #ifdef UAP_CFG80211
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 12, 0)
+	cancel_work_sync(&priv->notify_channel_work);
+	mutex_destroy(&priv->notify_chandef_lock);
+
 	if (priv->csa_workqueue) {
 		flush_workqueue(priv->csa_workqueue);
 		destroy_workqueue(priv->csa_workqueue);
