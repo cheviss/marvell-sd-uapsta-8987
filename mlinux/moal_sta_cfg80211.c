@@ -2398,6 +2398,20 @@ void woal_host_mlme_process_assoc_resp(moal_private *priv,
 						&priv->connect_lock, flags);
 
 					mutex_lock(&priv->wdev->mtx);
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+					{
+						struct cfg80211_rx_assoc_resp resp = {
+							.buf = assoc_info->assoc_resp_buf,
+							.len = assoc_info->assoc_resp_len,
+							.uapsd_queues = -1,
+							.req_ies = assoc_req_buf,
+							.req_ies_len = assoc_info->assoc_req_len,
+						};
+						resp.links[0].bss = bss;
+
+						cfg80211_rx_assoc_resp(priv->netdev, &resp);
+					}
+#else
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
 					cfg80211_rx_assoc_resp(
 						priv->netdev, bss,
@@ -2421,6 +2435,7 @@ void woal_host_mlme_process_assoc_resp(moal_private *priv,
 						priv->netdev, bss,
 						assoc_rsp->assoc_resp_buf,
 						assoc_rsp->assoc_resp_len);
+#endif
 #endif
 #endif
 #endif
@@ -8377,6 +8392,11 @@ int woal_cfg80211_update_ft_ies(struct wiphy *wiphy, struct net_device *dev,
 							 MOAL_IOCTL_WAIT);
 			passoc_rsp = (IEEEtypes_AssocRsp_t *)
 					     assoc_rsp.assoc_resp_buf;
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+			roam_info.links[0].bssid = priv->cfg_bssid;
+#elif CFG80211_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
+			roam_info.bssid = priv->cfg_bssid;
+#endif
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
 			roam_info.bssid = priv->cfg_bssid;
 			roam_info.req_ie = priv->sme_current.ie;
@@ -8836,6 +8856,11 @@ void woal_start_roaming(moal_private *priv)
 			}
 		}
 #endif
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+			roam_info.links[0].bssid = priv->cfg_bssid;
+#elif CFG80211_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
+			roam_info.bssid = priv->cfg_bssid;
+#endif
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
 		roam_info.bssid = priv->cfg_bssid;
 		roam_info.req_ie = ie;
@@ -8903,6 +8928,23 @@ int woal_cfg80211_uap_add_station(struct wiphy *wiphy, struct net_device *dev,
 #endif
 	mlan_status status;
 	int ret = 0;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+	const u8* supported_rates = params->link_sta_params.supported_rates;
+	u8 supported_rates_len = params->link_sta_params.supported_rates_len;
+	const struct ieee80211_ht_cap *ht_capa = params->link_sta_params.ht_capa;
+	const struct ieee80211_vht_cap *vht_capa = params->link_sta_params.vht_capa;
+	bool opmode_notif_used = params->link_sta_params.opmode_notif_used;
+	u8 opmode_notif = params->link_sta_params.opmode_notif;
+#else
+	const u8* supported_rates = params->supported_rates;
+	u8 supported_rates_len = params->supported_rates_len;
+	const struct ieee80211_ht_cap *ht_capa = params->ht_capa;
+	const struct ieee80211_vht_cap *vht_capa = params->vht_capa;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
+	bool opmode_notif_used = params->opmode_notif_used;
+	u8 opmode_notif = params->opmode_notif;
+#endif
+#endif
 
 	ENTER();
 
@@ -8911,19 +8953,19 @@ int woal_cfg80211_uap_add_station(struct wiphy *wiphy, struct net_device *dev,
 	if (params->ext_capab_len)
 		req_len += sizeof(MrvlIEtypesHeader_t) + params->ext_capab_len;
 #endif
-	if (params->supported_rates_len)
+	if (supported_rates_len)
 		req_len += sizeof(MrvlIEtypesHeader_t) +
-			   params->supported_rates_len;
+			supported_rates_len;
 	if (params->uapsd_queues || params->max_sp)
 		req_len += sizeof(MrvlIEtypesHeader_t) + sizeof(qosinfo);
-	if (params->ht_capa)
+	if (ht_capa)
 		req_len += sizeof(MrvlIEtypesHeader_t) +
 			   sizeof(struct ieee80211_ht_cap);
-	if (params->vht_capa)
+	if (vht_capa)
 		req_len += sizeof(MrvlIEtypesHeader_t) +
 			   sizeof(struct ieee80211_vht_cap);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
-	if (params->opmode_notif_used)
+	if (opmode_notif_used)
 		req_len += sizeof(MrvlIEtypesHeader_t) + sizeof(u8);
 #endif
 
@@ -8977,12 +9019,12 @@ int woal_cfg80211_uap_add_station(struct wiphy *wiphy, struct net_device *dev,
 		tlv = (MrvlIEtypes_Data_t *)pos;
 	}
 #endif
-	if (params->supported_rates_len) {
+	if (supported_rates_len) {
 		tlv = (MrvlIEtypes_Data_t *)pos;
 		tlv->header.type = SUPPORTED_RATES;
-		tlv->header.len = params->supported_rates_len;
+		tlv->header.len = supported_rates_len;
 		moal_memcpy_ext(priv->phandle, tlv->data,
-				params->supported_rates, tlv->header.len,
+				supported_rates, tlv->header.len,
 				tlv->header.len);
 		pos += sizeof(MrvlIEtypesHeader_t) + tlv->header.len;
 		bss->param.sta_info.tlv_len +=
@@ -9001,22 +9043,22 @@ int woal_cfg80211_uap_add_station(struct wiphy *wiphy, struct net_device *dev,
 			sizeof(MrvlIEtypesHeader_t) + tlv->header.len;
 		tlv = (MrvlIEtypes_Data_t *)pos;
 	}
-	if (params->ht_capa) {
+	if (ht_capa) {
 		tlv = (MrvlIEtypes_Data_t *)pos;
 		tlv->header.type = HT_CAPABILITY;
 		tlv->header.len = sizeof(struct ieee80211_ht_cap);
-		moal_memcpy_ext(priv->phandle, tlv->data, params->ht_capa,
+		moal_memcpy_ext(priv->phandle, tlv->data, ht_capa,
 				tlv->header.len, tlv->header.len);
 		pos += sizeof(MrvlIEtypesHeader_t) + tlv->header.len;
 		bss->param.sta_info.tlv_len +=
 			sizeof(MrvlIEtypesHeader_t) + tlv->header.len;
 		tlv = (MrvlIEtypes_Data_t *)pos;
 	}
-	if (params->vht_capa) {
+	if (vht_capa) {
 		tlv = (MrvlIEtypes_Data_t *)pos;
 		tlv->header.type = VHT_CAPABILITY;
 		tlv->header.len = sizeof(struct ieee80211_vht_cap);
-		moal_memcpy_ext(priv->phandle, tlv->data, params->vht_capa,
+		moal_memcpy_ext(priv->phandle, tlv->data, vht_capa,
 				tlv->header.len, tlv->header.len);
 		pos += sizeof(MrvlIEtypesHeader_t) + tlv->header.len;
 		bss->param.sta_info.tlv_len +=
@@ -9024,11 +9066,11 @@ int woal_cfg80211_uap_add_station(struct wiphy *wiphy, struct net_device *dev,
 		tlv = (MrvlIEtypes_Data_t *)pos;
 	}
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
-	if (params->opmode_notif_used) {
+	if (opmode_notif_used) {
 		tlv = (MrvlIEtypes_Data_t *)pos;
 		tlv->header.type = OPER_MODE_NTF;
 		tlv->header.len = sizeof(u8);
-		moal_memcpy_ext(priv->phandle, tlv->data, &params->opmode_notif,
+		moal_memcpy_ext(priv->phandle, tlv->data, &opmode_notif,
 				tlv->header.len, tlv->header.len);
 		pos += sizeof(MrvlIEtypesHeader_t) + tlv->header.len;
 		bss->param.sta_info.tlv_len +=
