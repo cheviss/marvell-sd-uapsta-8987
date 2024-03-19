@@ -3116,7 +3116,9 @@ static void woal_switch_uap_channel(moal_private *priv, t_u8 wait_option)
 	priv->channel = uap_channel.channel;
 	moal_memcpy_ext(priv->phandle, &priv->chan, &priv->csa_chan,
 			sizeof(struct cfg80211_chan_def), sizeof(priv->chan));
+	mutex_lock(&priv->netdev->ieee80211_ptr->mtx);
 	cfg80211_ch_switch_notify(priv->netdev, &priv->chan);
+	mutex_unlock(&priv->netdev->ieee80211_ptr->mtx);
 	if (priv->uap_tx_blocked) {
 		if (!netif_carrier_ok(priv->netdev))
 			netif_carrier_on(priv->netdev);

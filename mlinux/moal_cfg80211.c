@@ -4720,7 +4720,9 @@ void woal_cfg80211_notify_channel(moal_private *priv,
 #if KERNEL_VERSION(3, 8, 0) <= CFG80211_VERSION_CODE
 	if (MLAN_STATUS_SUCCESS ==
 	    woal_chandef_create(priv, &chandef, pchan_info)) {
+		mutex_lock(&priv->netdev->ieee80211_ptr->mtx);
 		cfg80211_ch_switch_notify(priv->netdev, &chandef);
+		mutex_unlock(&priv->netdev->ieee80211_ptr->mtx);
 		priv->channel = pchan_info->channel;
 #ifdef UAP_CFG80211
 		moal_memcpy_ext(priv->phandle, &priv->chan, &chandef,
@@ -4756,7 +4758,9 @@ void woal_cfg80211_notify_channel(moal_private *priv,
 			type = NL80211_CHAN_HT20;
 		break;
 	}
+	mutex_lock(&priv->netdev->ieee80211_ptr->mtx);
 	cfg80211_ch_switch_notify(priv->netdev, freq, type);
+	mutex_unlock(&priv->netdev->ieee80211_ptr->mtx);
 #endif
 #endif
 	LEAVE();
