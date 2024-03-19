@@ -56,10 +56,6 @@
 #endif
 #endif
 
-#ifndef WLAN_CIPHER_SUITE_FILS_PSK
-#define WLAN_CIPHER_SUITE_FILS_PSK 0x000FACFF
-#endif
-
 /* define for custom ie operation */
 #define MLAN_CUSTOM_IE_AUTO_IDX_MASK 0xffff
 #define MLAN_CUSTOM_IE_NEW_MASK 0x8000
@@ -70,8 +66,6 @@
 #define IE_MASK_EXTCAP 0x0010
 
 #define MRVL_PKT_TYPE_MGMT_FRAME 0xE5
-
-t_u8 woal_check_fils_capability(const t_u8 *ie, int len);
 
 mlan_status woal_cfg80211_set_key(moal_private *priv, t_u8 is_enable_wep,
 				  t_u32 cipher, const t_u8 *key, int key_len,
@@ -112,7 +106,7 @@ pmoal_private woal_get_scan_interface(pmoal_handle handle);
 void woal_host_mlme_disconnect(pmoal_private priv, u16 reason_code, u8 *sa);
 void woal_host_mlme_work_queue(struct work_struct *work);
 void woal_host_mlme_process_assoc_resp(moal_private *priv,
-				       mlan_ds_assoc_info * assoc_info);
+				       mlan_ds_misc_assoc_rsp *assoc_rsp);
 #endif
 #endif
 
@@ -179,8 +173,8 @@ int woal_set_rf_channel(moal_private *priv, struct ieee80211_channel *chan,
 			enum nl80211_channel_type channel_type,
 			t_u8 wait_option);
 
-static inline int
-woal_cfg80211_scan_done(struct cfg80211_scan_request *request, bool aborted)
+static inline int woal_cfg80211_scan_done(struct cfg80211_scan_request *request,
+					  bool aborted)
 {
 #if KERNEL_VERSION(4, 8, 0) <= CFG80211_VERSION_CODE
 	struct cfg80211_scan_info info;
@@ -192,7 +186,6 @@ woal_cfg80211_scan_done(struct cfg80211_scan_request *request, bool aborted)
 #endif
 	return 0;
 }
-
 mlan_status woal_inform_bss_from_scan_result(moal_private *priv,
 					     pmlan_ssid_bssid ssid_bssid,
 					     t_u8 wait_option);
@@ -228,6 +221,10 @@ int woal_cfg80211_set_default_beacon_key(struct wiphy *wiphy,
 					 t_u8 key_index);
 #endif
 
+#if KERNEL_VERSION(3, 1, 0) <= CFG80211_VERSION_CODE
+int woal_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *dev,
+				 struct cfg80211_gtk_rekey_data *data);
+#endif
 void woal_mgmt_frame_register(moal_private *priv, u16 frame_type, bool reg);
 void woal_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
 #if KERNEL_VERSION(3, 6, 0) <= CFG80211_VERSION_CODE
@@ -240,7 +237,7 @@ void woal_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
 #else
 				       t_u16 frame_type, bool reg
 #endif
-	);
+);
 
 int woal_cfg80211_mgmt_tx(struct wiphy *wiphy,
 #if KERNEL_VERSION(3, 6, 0) <= CFG80211_VERSION_CODE
@@ -264,7 +261,7 @@ int woal_cfg80211_mgmt_tx(struct wiphy *wiphy,
 			  bool dont_wait_for_ack,
 #endif
 #endif
-			  u64 * cookie);
+			  u64 *cookie);
 
 #if KERNEL_VERSION(3, 14, 0) <= CFG80211_VERSION_CODE
 void woal_update_radar_chans_dfs_state(struct wiphy *wiphy);
@@ -274,21 +271,22 @@ mlan_status woal_register_cfg80211(moal_private *priv);
 
 extern struct ieee80211_supported_band cfg80211_band_2ghz;
 extern struct ieee80211_supported_band cfg80211_band_5ghz;
+extern struct ieee80211_supported_band mac1_cfg80211_band_2ghz;
+extern struct ieee80211_supported_band mac1_cfg80211_band_5ghz;
 
 #if defined(STA_SUPPORT) && defined(UAP_SUPPORT)
 int woal_cfg80211_bss_role_cfg(moal_private *priv, t_u16 action,
 			       t_u8 *bss_role);
 #endif
 #if KERNEL_VERSION(4, 1, 0) <= CFG80211_VERSION_CODE
-struct wireless_dev *woal_cfg80211_add_virtual_intf(struct wiphy *wiphy,
-						    const char *name,
-						    unsigned char
-						    name_assign_type,
-						    enum nl80211_iftype type,
+struct wireless_dev *
+woal_cfg80211_add_virtual_intf(struct wiphy *wiphy, const char *name,
+			       unsigned char name_assign_type,
+			       enum nl80211_iftype type,
 #if KERNEL_VERSION(4, 12, 0) > CFG80211_VERSION_CODE
-						    u32 *flags,
+			       u32 *flags,
 #endif
-						    struct vif_params *params);
+			       struct vif_params *params);
 #else
 #if KERNEL_VERSION(3, 7, 0) <= CFG80211_VERSION_CODE
 struct wireless_dev *woal_cfg80211_add_virtual_intf(struct wiphy *wiphy,
@@ -326,8 +324,11 @@ int woal_cfg80211_del_virtual_intf(struct wiphy *wiphy,
 int woal_cfg80211_del_virtual_intf(struct wiphy *wiphy, struct net_device *dev);
 #endif
 
+#if defined(WIFI_DIRECT_SUPPORT)
 void woal_remove_virtual_interface(moal_handle *handle);
+#endif
 
+#ifdef WIFI_DIRECT_SUPPORT
 /* Group Owner Negotiation Req */
 #define P2P_GO_NEG_REQ 0
 /* Group Owner Negotiation Rsp */
@@ -367,6 +368,7 @@ int woal_cfg80211_init_p2p_go(moal_private *priv);
 
 int woal_cfg80211_deinit_p2p(moal_private *priv);
 #endif /* KERNEL_VERSION */
+#endif /* WIFI_DIRECT_SUPPORT */
 
 /** Define for remain on channel duration timer */
 #define MAX_REMAIN_ON_CHANNEL_DURATION (5000)
@@ -457,8 +459,8 @@ void woal_csa_work_queue(struct work_struct *work);
 #if defined(UAP_CFG80211) || defined(STA_CFG80211)
 #if KERNEL_VERSION(3, 5, 0) <= CFG80211_VERSION_CODE
 void woal_cfg80211_notify_channel(moal_private *priv,
-				  chan_band_info * pchan_info);
-void woal_channel_switch_event(moal_private *priv, chan_band_info * pchan_info);
+				  chan_band_info *pchan_info);
+void woal_channel_switch_event(moal_private *priv, chan_band_info *pchan_info);
 #endif
 #endif
 
@@ -472,6 +474,9 @@ void woal_report_sched_scan_result(moal_private *priv);
 #endif
 
 #if defined(UAP_CFG80211) || defined(STA_CFG80211)
+
+void woal_cfg80211_notify_antcfg(moal_private *priv, struct wiphy *wiphy,
+				 mlan_ds_radio_cfg *radio);
 #endif
 
 void woal_deauth_event(moal_private *priv, int reason_code);
@@ -479,19 +484,22 @@ void woal_deauth_event(moal_private *priv, int reason_code);
 #if KERNEL_VERSION(3, 8, 0) <= CFG80211_VERSION_CODE
 mlan_status woal_chandef_create(moal_private *priv,
 				struct cfg80211_chan_def *chandef,
-				chan_band_info * pchan_info);
+				chan_band_info *pchan_info);
+#endif
+
+#if KERNEL_VERSION(4, 20, 0) <= CFG80211_VERSION_CODE
+void woal_cfg80211_setup_he_cap(moal_private *priv,
+				struct ieee80211_supported_band *band);
+void woal_cfg80211_free_iftype_data(struct wiphy *wiphy);
 #endif
 
 void woal_clear_all_mgmt_ies(moal_private *priv, t_u8 wait_option);
-int woal_cfg80211_mgmt_frame_ie(moal_private *priv, const t_u8 *beacon_ies,
-				size_t beacon_ies_len,
-				const t_u8 *proberesp_ies,
-				size_t proberesp_ies_len,
-				const t_u8 *assocresp_ies,
-				size_t assocresp_ies_len,
-				const t_u8 *probereq_ies,
-				size_t probereq_ies_len, t_u16 mask,
-				t_u8 wait_option);
+int woal_cfg80211_mgmt_frame_ie(
+	moal_private *priv, const t_u8 *beacon_ies, size_t beacon_ies_len,
+	const t_u8 *proberesp_ies, size_t proberesp_ies_len,
+	const t_u8 *assocresp_ies, size_t assocresp_ies_len,
+	const t_u8 *probereq_ies, size_t probereq_ies_len, t_u16 mask,
+	t_u8 wait_option);
 
 int woal_get_active_intf_freq(moal_private *priv);
 

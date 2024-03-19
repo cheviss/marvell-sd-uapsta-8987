@@ -33,7 +33,7 @@ Change log:
 #define WOAL_2K_BYTES 2000
 
 /** PRIVATE CMD ID */
-#define WOAL_IOCTL (SIOCIWFIRSTPRIV)	/* 0x8BE0 defined in wireless.h */
+#define WOAL_IOCTL (SIOCIWFIRSTPRIV) /* 0x8BE0 defined in wireless.h */
 
 /** Private command ID to set one int/get word char */
 #define WOAL_SETONEINT_GETWORDCHAR (WOAL_IOCTL + 1)
@@ -67,6 +67,12 @@ Change log:
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0) */
 #endif
 
+#ifdef CONFIG_USB_SUSPEND
+/** Private command ID for usb suspend */
+#define WOAL_USB_SUSPEND 2
+/** Private command ID for usb resume */
+#define WOAL_USB_RESUME 3
+#endif /* CONFIG_USB_SUSPEND */
 /** Private command ID to clear 11d chan table */
 #define WOAL_11D_CLR_CHAN_TABLE 4
 
@@ -104,30 +110,30 @@ Change log:
 #define WOAL_11N_AMSDU_AGGR_CTRL 17
 /** Private command ID to set/get Inactivity timeout */
 #define WOAL_INACTIVITY_TIMEOUT_EXT 18
+#ifdef SDIO
 /** Private command ID to turn on/off sdio clock */
 #define WOAL_SDIO_CLOCK 19
 /** Private command ID to read/write Command 52 */
 #define WOAL_CMD_52RDWR 20
+#endif
 /** Private command ID to set/get scan configuration parameter */
 #define WOAL_SCAN_CFG 21
 /** Private command ID to set/get PS configuration parameter */
 #define WOAL_PS_CFG 22
 /** Private command ID to read/write memory */
 #define WOAL_MEM_READ_WRITE 23
+#ifdef SDIO
 /** Private command ID to control SDIO MP-A */
 #define WOAL_SDIO_MPA_CTRL 25
+#endif
 /** Private command ID for Updating ADDBA variables */
 #define WOAL_ADDBA_REJECT 27
 /** Private command ID to set/get sleep parameters */
 #define WOAL_SLEEP_PARAMS 28
-/** Private command ID to set/get network monitor */
-#define WOAL_NET_MONITOR 30
 /** Private command ID to set/get TX BF capabilities */
 #define WOAL_TX_BF_CAP 31
-#if defined(DFS_TESTING_SUPPORT)
 /** Private command ID to set/get dfs testing settings */
 #define WOAL_DFS_TESTING 33
-#endif
 /** Private command ID to set/get CFP table codes */
 #define WOAL_CFP_CODE 34
 /** Private command ID to set/get tx/rx antenna */
@@ -162,22 +168,26 @@ Change log:
 #define WOAL_SET_GET_WWS_CFG 12
 /** Private command ID to set/get sleep period */
 #define WOAL_SLEEP_PD 13
-/** Private command ID to set/get firmware wakeup method */
-#define WOAL_FW_WAKEUP_METHOD 15
 /** Private command ID to set/get auth type */
 #define WOAL_AUTH_TYPE 18
 /** Private command ID to set/get port control */
 #define WOAL_PORT_CTRL 19
+#ifdef WIFI_DIRECT_SUPPORT
 #if defined(STA_SUPPORT) && defined(UAP_SUPPORT)
 /** Private command ID for set/get BSS role */
 #define WOAL_SET_GET_BSS_ROLE 21
 #endif
+#endif
 /** Private command ID for set/get 11h local power constraint */
 #define WOAL_SET_GET_11H_LOCAL_PWR_CONSTRAINT 22
+/** Private command ID to set/get 11N HT stream configuration */
+#define WOAL_HT_STREAM_CFG 23
 /** Private command ID to set/get MAC control */
 #define WOAL_MAC_CONTROL 24
 /** Private command ID to get thermal value */
 #define WOAL_THERMAL 25
+/** Private command ID to set/get hs cfg param */
+#define WOAL_CFG_HOTSPOT 26
 
 /** Private command ID to get log */
 #define WOALGETLOG (WOAL_IOCTL + 7)
@@ -189,6 +199,8 @@ Change log:
 
 /** Private command to get/set 256 chars */
 #define WOAL_SET_GET_256_CHAR (WOAL_IOCTL + 9)
+/** Private command to read/write passphrase */
+#define WOAL_PASSPHRASE 1
 #define WOAL_ASSOCIATE 3
 /** Private command ID to get WMM queue status */
 #define WOAL_WMM_QUEUE_STATUS 4
@@ -197,6 +209,8 @@ Change log:
 #define WOAL_IP_ADDRESS 7
 /** Private command ID to set/get TX bemaforming */
 #define WOAL_TX_BF_CFG 8
+/** Private command ID to get PTK/GTK */
+#define WOAL_GET_KEY 9
 
 /** Get log buffer size */
 #define GETLOG_BUFSIZE 1500
@@ -210,6 +224,8 @@ Change log:
 #define WOAL_SETNONE_GET_FOUR_INT (WOAL_IOCTL + 13)
 /** Private command ID to get data rates */
 #define WOAL_DATA_RATE 1
+/** Private command ID to get E-Supplicant mode */
+#define WOAL_ESUPP_MODE 2
 
 /** Private command to get/set 64 ints */
 #define WOAL_SET_GET_64_INT (WOAL_IOCTL + 15)
@@ -230,8 +246,10 @@ Change log:
 /** Private command ID to set/get 2K bytes */
 #define WOAL_SET_GET_2K_BYTES (WOAL_IOCTL + 23)
 
+#ifdef SDIO
 /** Private command ID to read/write Command 53 */
 #define WOAL_CMD_53RDWR 2
+#endif
 
 /** Private command ID for setuserscan */
 #define WOAL_SET_USER_SCAN 3

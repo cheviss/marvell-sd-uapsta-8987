@@ -142,19 +142,16 @@ mlan_status wlan_11h_print_event_radar_detected(mlan_private *priv,
 						mlan_event *pevent,
 						t_u8 *radar_chan);
 
-#ifdef DFS_TESTING_SUPPORT
 t_s32 wlan_11h_cancel_radar_detect(mlan_private *priv);
 /** Handler for DFS_TESTING IOCTL */
 extern mlan_status wlan_11h_ioctl_dfs_testing(pmlan_adapter pmadapter,
 					      pmlan_ioctl_req pioctl_req);
 extern mlan_status
+wlan_11h_ioctl_get_channel_nop_info(pmlan_adapter pmadapter,
+				    pmlan_ioctl_req pioctl_req);
 
-wlan_11h_ioctl_channel_nop_info(pmlan_adapter pmadapter,
-				pmlan_ioctl_req pioctl_req);
-#endif
-
-extern mlan_status
- wlan_11h_ioctl_dfs_chan_report(mlan_private *priv, pmlan_ioctl_req pioctl_req);
+extern mlan_status wlan_11h_ioctl_dfs_chan_report(mlan_private *priv,
+						  pmlan_ioctl_req pioctl_req);
 extern mlan_status wlan_11h_ioctl_chan_switch_count(pmlan_adapter pmadapter,
 						    pmlan_ioctl_req pioctl_req);
 
@@ -173,6 +170,14 @@ extern t_bool wlan_11h_radar_detected_tx_blocked(mlan_adapter *pmadapter);
 extern mlan_status wlan_11h_radar_detected_callback(t_void *priv);
 /** set dfs check channel */
 void wlan_11h_set_dfs_check_chan(mlan_private *priv, t_u8 chan);
+
+#ifdef UAP_SUPPORT
+/** BW_change event Handler for dfs_repeater */
+void wlan_dfs_rep_bw_change(mlan_adapter *pmadapter);
+
+/** disconnect event Handler for dfs_repeater */
+void wlan_dfs_rep_disconnect(mlan_adapter *pmadapter);
+#endif
 
 /** Handler for RADAR_DETECTED */
 extern mlan_status wlan_11h_radar_detected_handling(mlan_adapter *pmadapter,

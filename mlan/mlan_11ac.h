@@ -35,6 +35,10 @@ void wlan_fill_vht_cap_tlv(mlan_private *priv, MrvlIETypes_VHTCap_t *pvht_cap,
 			   t_u16 bands, t_u8 flag, t_u8 bw_80p80);
 void wlan_fill_vht_cap_ie(mlan_private *priv, IEEEtypes_VHTCap_t *pvht_cap,
 			  t_u16 bands);
+void wlan_fill_tdls_vht_oprat_ie(mlan_private *priv,
+				 IEEEtypes_VHTOprat_t *vht_oprat,
+				 sta_node *sta_ptr);
+t_u8 wlan_is_ap_in_11ac_mode(mlan_private *priv);
 int wlan_cmd_append_11ac_tlv(mlan_private *pmpriv, BSSDescriptor_t *pbss_desc,
 			     t_u8 **ppbuffer);
 mlan_status wlan_11ac_cfg_ioctl(pmlan_adapter pmadapter,
@@ -43,12 +47,10 @@ void wlan_update_11ac_cap(mlan_private *pmpriv);
 t_u8 wlan_11ac_bandconfig_allowed(mlan_private *pmpriv, t_u16 bss_band);
 t_u8 wlan_is_80_80_support(mlan_private *pmpriv, BSSDescriptor_t *pbss_desc);
 
-mlan_status wlan_cmd_11ac_cfg(pmlan_private pmpriv,
-			      HostCmd_DS_COMMAND *cmd, t_u16 cmd_action,
-			      t_void *pdata_buf);
+mlan_status wlan_cmd_11ac_cfg(pmlan_private pmpriv, HostCmd_DS_COMMAND *cmd,
+			      t_u16 cmd_action, t_void *pdata_buf);
 
-mlan_status wlan_ret_11ac_cfg(pmlan_private pmpriv,
-			      HostCmd_DS_COMMAND *resp,
+mlan_status wlan_ret_11ac_cfg(pmlan_private pmpriv, HostCmd_DS_COMMAND *resp,
 			      mlan_ioctl_req *pioctl_buf);
 
 #endif /* _MLAN_11AC_H_ */

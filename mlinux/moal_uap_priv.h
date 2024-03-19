@@ -58,9 +58,11 @@ Change log:
 
 /** Private command ID to set one int/get one int */
 #define WOAL_UAP_SETONEINT_GETONEINT (WOAL_UAP_IOCTL + 5)
+#ifdef WIFI_DIRECT_SUPPORT
 #if defined(STA_SUPPORT) && defined(UAP_SUPPORT)
 /** Private command ID for set/get BSS role */
 #define WOAL_UAP_SET_GET_BSS_ROLE 1
+#endif
 #endif
 
 /** Private command ID for hostcmd */

@@ -63,6 +63,13 @@ Change log:
 #include <linux/config.h>
 #endif
 
+#ifdef USB
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22)
+#include <linux/freezer.h>
+#endif
+#include <linux/usb.h>
+#endif /* USB */
+
 /* ASM files */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)
 #include <linux/semaphore.h>
@@ -97,16 +104,12 @@ Change log:
 
 #include <linux/firmware.h>
 
-#ifdef ANDROID_KERNEL
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 5, 0)
 #include <linux/pm_wakeup.h>
 #include <linux/device.h>
 #else
 #include <linux/wakelock.h>
 #endif
-#endif
-
-#include <net/ieee80211_radiotap.h>
 
 #include "mlan.h"
 #include "moal_shim.h"
@@ -217,17 +220,14 @@ Change log:
 #define mwiphy_name "mwiphy%d"
 
 /** country txpower mode */
-#define CNTRY_TXPOWER_MODE  1
+#define CNTRY_TXPOWER_MODE 1
 /** country rgpower mode */
-#define CNTRY_RGPOWER_MODE  2
-
-#define MLAN_ACTION_FRAME_CATEGORY_OFFSET (40)
-#define MLAN_ACTION_FRAME_ACTION_OFFSET (41)
+#define CNTRY_RGPOWER_MODE 2
 
 /** Define BOOLEAN */
 typedef t_u8 BOOLEAN;
 
-#define INTF_CARDTYPE "----------%s-MX"
+#define INTF_CARDTYPE "----------%s-MM"
 
 #define KERN_VERSION "5X"
 
@@ -288,11 +288,16 @@ extern int fw_region;
 #endif
 #endif
 
+#if defined(USB)
+extern int skip_fwdnld;
+#endif
+#if defined(SDIO) || defined(PCIE)
 typedef enum {
 	RDWR_STATUS_SUCCESS = 0,
 	RDWR_STATUS_FAILURE = 1,
 	RDWR_STATUS_DONE = 2
 } rdwr_status;
+#endif
 /** Private structure for MOAL */
 typedef struct _moal_private moal_private, *pmoal_private;
 /** Handle data structure for MOAL  */
@@ -320,11 +325,10 @@ enum { MOAL_NO_WAIT, MOAL_IOCTL_WAIT, MOAL_IOCTL_WAIT_TIMEOUT };
 
 /** moal_main_state */
 enum { MOAL_STATE_IDLE,
-	MOAL_RECV_INT,
-	MOAL_ENTER_WORK_QUEUE,
-	MOAL_START_MAIN_PROCESS,
-	MOAL_END_MAIN_PROCESS
-};
+       MOAL_RECV_INT,
+       MOAL_ENTER_WORK_QUEUE,
+       MOAL_START_MAIN_PROCESS,
+       MOAL_END_MAIN_PROCESS };
 
 /** HostCmd_Header */
 typedef struct _HostCmd_Header {
@@ -343,7 +347,7 @@ typedef struct _moal_drv_timer {
 	/** Timer list */
 	struct timer_list tl;
 	/** Timer function */
-	void (*timer_function) (void *context);
+	void (*timer_function)(void *context);
 	/** Timer function context */
 	void *function_context;
 	/** Time period */
@@ -354,70 +358,6 @@ typedef struct _moal_drv_timer {
 	t_u32 timer_is_canceled;
 } moal_drv_timer, *pmoal_drv_timer;
 
-typedef struct {
-	t_u8 dialog_token;
-	t_u8 follow_up_dialog_token;
-	t_u32 t1;
-	t_u32 t4;
-	t_u8 t1_err;
-	t_u8 t4_err;
-} __attribute__ ((packed)) moal_wnm_tm_msmt;
-
-/** wlan_802_11_header */
-typedef struct {
-	/** Frame Control */
-	t_u16 frm_ctl;
-	/** Duration ID */
-	t_u16 duration_id;
-	/** Address1 */
-	mlan_802_11_mac_addr addr1;
-	/** Address2 */
-	mlan_802_11_mac_addr addr2;
-	/** Address3 */
-	mlan_802_11_mac_addr addr3;
-	/** Sequence Control */
-	t_u16 seq_ctl;
-	/** Address4 */
-	mlan_802_11_mac_addr addr4;
-} __attribute__ ((packed)) moal_wlan_802_11_header;
-
-/** moal_802_11_action header */
-typedef struct {
-	/** Frame Cotrol */
-	t_u16 frame_control;
-	/** Duration */
-	t_u16 duration;
-	/** dest addr */
-	t_u8 da[ETH_ALEN];
-	/** source addr */
-	t_u8 sa[ETH_ALEN];
-	/** bssid */
-	t_u8 bssid[ETH_ALEN];
-	/** seq_ctrl */
-	t_u16 seq_ctrl;
-	/** category */
-	t_u8 category;
-} __attribute__ ((packed)) moal_802_11_action_header;
-
-typedef struct {
-	/** t2 time */
-	t_u32 t2;
-	/** t2 error */
-	t_u8 t2_err;
-	/** t3 time */
-	t_u32 t3;
-	/** t3 error */
-	t_u8 t3_err;
-	/** ingress time */
-	t_u64 ingress_time;
-} __attribute__ ((packed)) moal_timestamps;
-
-typedef struct {
-	t_u8 vendor_specific;
-	t_u8 length;
-	t_u8 data[];
-} __attribute__ ((packed)) moal_ptp_context;
-
 /**
  *  @brief Timer handler
  *
@@ -426,13 +366,11 @@ typedef struct {
  *  @return		N/A
  */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-static inline void
-woal_timer_handler(struct timer_list *t)
+static inline void woal_timer_handler(struct timer_list *t)
 {
 	pmoal_drv_timer timer = from_timer(timer, t, tl);
 #else
-static inline void
-woal_timer_handler(unsigned long fcontext)
+static inline void woal_timer_handler(unsigned long fcontext)
 {
 	pmoal_drv_timer timer = (pmoal_drv_timer)fcontext;
 #endif
@@ -457,10 +395,9 @@ woal_timer_handler(unsigned long fcontext)
  *
  *  @return			N/A
  */
-static inline void
-woal_initialize_timer(pmoal_drv_timer timer,
-		      void (*TimerFunction) (void *context),
-		      void *FunctionContext)
+static inline void woal_initialize_timer(pmoal_drv_timer timer,
+					 void (*TimerFunction)(void *context),
+					 void *FunctionContext)
 {
 	/* First, setup the timer to trigger the wlan_timer_handler proxy */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
@@ -487,8 +424,8 @@ woal_initialize_timer(pmoal_drv_timer timer,
  *
  *  @return			N/A
  */
-static inline void
-woal_mod_timer(pmoal_drv_timer timer, t_u32 millisecondperiod)
+static inline void woal_mod_timer(pmoal_drv_timer timer,
+				  t_u32 millisecondperiod)
 {
 	timer->time_period = millisecondperiod;
 	mod_timer(&timer->tl, jiffies + (millisecondperiod * HZ) / 1000);
@@ -502,8 +439,7 @@ woal_mod_timer(pmoal_drv_timer timer, t_u32 millisecondperiod)
  *
  *  @return		N/A
  */
-static inline void
-woal_cancel_timer(moal_drv_timer *timer)
+static inline void woal_cancel_timer(moal_drv_timer *timer)
 {
 	if (timer->timer_is_periodic || in_atomic() || irqs_disabled())
 		del_timer(&timer->tl);
@@ -538,8 +474,7 @@ typedef struct _moal_thread {
  *  @param thr			Thread structure
  *  @return			N/A
  */
-static inline void
-woal_activate_thread(moal_thread *thr)
+static inline void woal_activate_thread(moal_thread *thr)
 {
 	/** Initialize the wait queue */
 	init_waitqueue_head(&thr->wait_q);
@@ -554,8 +489,7 @@ woal_activate_thread(moal_thread *thr)
  *  @param thr			Thread structure
  *  @return			N/A
  */
-static inline void
-woal_deactivate_thread(moal_thread *thr)
+static inline void woal_deactivate_thread(moal_thread *thr)
 {
 	/* Reset the pid */
 	thr->pid = 0;
@@ -569,8 +503,8 @@ woal_deactivate_thread(moal_thread *thr)
  *  @param name			Thread name
  *  @return			N/A
  */
-static inline void
-woal_create_thread(int (*threadfunc) (void *), moal_thread *thr, char *name)
+static inline void woal_create_thread(int (*threadfunc)(void *),
+				      moal_thread *thr, char *name)
 {
 	/* Create and run the thread */
 	thr->task = kthread_run(threadfunc, thr, "%s", name);
@@ -610,8 +544,7 @@ woal_create_thread(int (*threadfunc) (void *), moal_thread *thr, char *name)
  *
  *  @return		N/A
  */
-static inline void
-woal_sched_timeout(t_u32 millisec)
+static inline void woal_sched_timeout(t_u32 millisec)
 {
 	set_current_state(TASK_INTERRUPTIBLE);
 
@@ -625,8 +558,7 @@ woal_sched_timeout(t_u32 millisec)
  *
  *  @return		N/A
  */
-static inline void
-woal_sched_timeout_uninterruptible(t_u32 millisec)
+static inline void woal_sched_timeout_uninterruptible(t_u32 millisec)
 {
 	set_current_state(TASK_UNINTERRUPTIBLE);
 	schedule_timeout_uninterruptible((millisec * HZ) / 1000);
@@ -636,16 +568,15 @@ woal_sched_timeout_uninterruptible(t_u32 millisec)
 #define IN6PTON_XDIGIT 0x00010000
 #define IN6PTON_DIGIT 0x00020000
 #define IN6PTON_COLON_MASK 0x00700000
-#define IN6PTON_COLON_1 0x00100000	/* single : requested */
-#define IN6PTON_COLON_2 0x00200000	/* second : requested */
-#define IN6PTON_COLON_1_2 0x00400000	/* :: requested */
-#define IN6PTON_DOT 0x00800000	/* . */
+#define IN6PTON_COLON_1 0x00100000 /* single : requested */
+#define IN6PTON_COLON_2 0x00200000 /* second : requested */
+#define IN6PTON_COLON_1_2 0x00400000 /* :: requested */
+#define IN6PTON_DOT 0x00800000 /* . */
 #define IN6PTON_DELIM 0x10000000
-#define IN6PTON_NULL 0x20000000	/* first/tail */
+#define IN6PTON_NULL 0x20000000 /* first/tail */
 #define IN6PTON_UNKNOWN 0x40000000
 
-static inline int
-xdigit2bin(char c, int delim)
+static inline int xdigit2bin(char c, int delim)
 {
 	if (c == delim || c == '\0')
 		return IN6PTON_DELIM;
@@ -664,8 +595,8 @@ xdigit2bin(char c, int delim)
 	return IN6PTON_UNKNOWN;
 }
 
-static inline int
-in4_pton(const char *src, int srclen, u8 *dst, int delim, const char **end)
+static inline int in4_pton(const char *src, int srclen, u8 *dst, int delim,
+			   const char **end)
 {
 	const char *s;
 	u8 *d;
@@ -702,7 +633,7 @@ in4_pton(const char *src, int srclen, u8 *dst, int delim, const char **end)
 		w = (w * 10) + c;
 		if ((w & 0xffff) > 255)
 			goto out;
-cont:
+	cont:
 		if (i >= 4)
 			goto out;
 		s++;
@@ -752,7 +683,7 @@ out:
 /** Request FW timeout in second */
 #define REQUEST_FW_TIMEOUT 30
 
-#if defined(SYSKT)
+#if defined(USB) || defined(SYSKT)
 /** Max loop count (* 100ms) for waiting device ready at init time */
 #define MAX_WAIT_DEVICE_READY_COUNT 50
 #endif
@@ -773,19 +704,27 @@ out:
 /* IOCTL Timeout */
 #define MOAL_IOCTL_TIMEOUT (20 * HZ)
 
-#ifdef ANDROID_KERNEL
 /** Wake lock timeout in msec */
 #define WAKE_LOCK_TIMEOUT 3000
 /** Roaming Wake lock timeout in msec */
 #define ROAMING_WAKE_LOCK_TIMEOUT 10000
-#endif
 
 /** Threshold value of number of times the Tx timeout happened */
-#define NUM_TX_TIMEOUT_THRESHOLD 5
+/* WAR For EDMAC Test */
+#define NUM_TX_TIMEOUT_THRESHOLD 10
 /** Custom event : DRIVER HANG */
 #define CUS_EVT_DRIVER_HANG "EVENT=DRIVER_HANG"
 /** Custom event : FW_DUMP */
 #define CUS_EVT_FW_DUMP "EVENT=FW_DUMP"
+
+/** TDLS connected event */
+#define CUS_EVT_TDLS_CONNECTED "EVENT=TDLS_CONNECTED"
+/** TDLS tear down event */
+#define CUS_EVT_TDLS_TEARDOWN "EVENT=TDLS_TEARDOWN"
+/** wmm info */
+#define WMM_TYPE_INFO 0
+/** wmm parameter */
+#define WMM_TYPE_PARAMETER 1
 
 /** AP connected event */
 #define CUS_EVT_AP_CONNECTED "EVENT=AP_CONNECTED"
@@ -831,10 +770,6 @@ out:
 /** Custom event : Deep Sleep awake */
 #define CUS_EVT_DEEP_SLEEP_AWAKE "EVENT=DS_AWAKE"
 
-#define CUS_EVT_GET_CORRELATED_TIME "EVENT=CORRELATED-TIME"
-#define CUS_EVT_TIMING_MSMT_CONFIRM "EVENT=TIMING-MSMT-CONFIRM"
-#define CUS_EVT_TM_FRAME_INDICATION "EVENT=TIMING-MSMT-FRAME"
-
 #define CUS_EVT_TOD_TOA "EVENT=TOD-TOA"
 
 /** Custom event : Host Sleep activated */
@@ -846,19 +781,19 @@ out:
 
 /** Wakeup Reason */
 typedef enum {
-	NO_HSWAKEUP_REASON = 0,	// 0.unknown
-	BCAST_DATA_MATCHED,	// 1. Broadcast data matched
-	MCAST_DATA_MATCHED,	// 2. Multicast data matched
-	UCAST_DATA_MATCHED,	// 3. Unicast data matched
-	MASKTABLE_EVENT_MATCHED,	// 4. Maskable event matched
-	NON_MASKABLE_EVENT_MATCHED,	// 5. Non-maskable event matched
-	NON_MASKABLE_CONDITION_MATCHED,	// 6. Non-maskable condition matched
-	// (EAPoL rekey)
-	MAGIC_PATTERN_MATCHED,	// 7. Magic pattern matched
-	CONTROL_FRAME_MATCHED,	// 8. Control frame matched
-	MANAGEMENT_FRAME_MATCHED,	// 9. Management frame matched
-	GTK_REKEY_FAILURE,	// 10. GTK rekey failure
-	RESERVED		// Others: reserved
+	NO_HSWAKEUP_REASON = 0, // 0.unknown
+	BCAST_DATA_MATCHED, // 1. Broadcast data matched
+	MCAST_DATA_MATCHED, // 2. Multicast data matched
+	UCAST_DATA_MATCHED, // 3. Unicast data matched
+	MASKTABLE_EVENT_MATCHED, // 4. Maskable event matched
+	NON_MASKABLE_EVENT_MATCHED, // 5. Non-maskable event matched
+	NON_MASKABLE_CONDITION_MATCHED, // 6. Non-maskable condition matched
+					// (EAPoL rekey)
+	MAGIC_PATTERN_MATCHED, // 7. Magic pattern matched
+	CONTROL_FRAME_MATCHED, // 8. Control frame matched
+	MANAGEMENT_FRAME_MATCHED, // 9. Management frame matched
+	GTK_REKEY_FAILURE, // 10. GTK rekey failure
+	RESERVED // Others: reserved
 } HSWakeupReason_t;
 
 /** Custom event : WEP ICV error */
@@ -879,8 +814,6 @@ typedef enum {
 #define CUS_EVT_STA_DISCONNECTED "EVENT=STA_DISCONNECTED"
 #endif
 #define FW_DEBUG_INFO "EVENT=FW_DEBUG_INFO"
-
-#define CUS_EVT_CSI "EVENT=MLAN_CSI"
 
 /** 10 seconds */
 #define MOAL_TIMER_10S 10000
@@ -936,6 +869,24 @@ typedef enum {
 #define DEF_SCAN_CHAN_GAP 50
 /** default scan time per channel in miracast mode */
 #define DEF_MIRACAST_SCAN_TIME 20
+/** GAP value is optional */
+#define GAP_FLAG_OPTIONAL MBIT(15)
+
+/** Macro to extract the TOS field from a skb */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22)
+#define SKB_TOS(skb) (ip_hdr(skb)->tos)
+#else
+#define SKB_TOS(skb) (skb->nh.iph->tos)
+#endif
+#define SKB_TIDV6(skb) (ipv6_get_dsfield(ipv6_hdr(skb)))
+#define IS_SKB_MAGIC_VLAN(skb) (skb->priority >= 256 && skb->priority <= 263)
+#define GET_VLAN_PRIO(skb) (skb->priority - 256)
+
+/** Offset for TOS field in the IP header */
+#define IPTOS_OFFSET 5
+
+/** Offset for DSCP in the tos field */
+#define DSCP_OFFSET 2
 
 /** max retry count for wait_event_interupptible_xx while loop */
 #define MAX_RETRY_CNT 100
@@ -1004,15 +955,16 @@ typedef struct _wait_queue {
 /** Driver mode uAP bit */
 #define DRV_MODE_UAP MBIT(1)
 /** Maximum uAP BSS */
-#define MAX_UAP_BSS 3
+#define MAX_UAP_BSS 1
 /** Default uAP BSS */
 #define DEF_UAP_BSS 1
 
 /** WACP Modes for uAP */
-#define WACP_MODE_DEFAULT   0
-#define WACP_MODE_1         1
-#define WACP_MODE_2         2
+#define WACP_MODE_DEFAULT 0
+#define WACP_MODE_1 1
+#define WACP_MODE_2 2
 #endif
+#ifdef WIFI_DIRECT_SUPPORT
 /** Driver mode WIFIDIRECT bit */
 #define DRV_MODE_WIFIDIRECT MBIT(2)
 /** Maximum WIFIDIRECT BSS */
@@ -1022,19 +974,7 @@ typedef struct _wait_queue {
 #if defined(STA_CFG80211) && defined(UAP_CFG80211)
 #define DEF_VIRTUAL_BSS 0
 #endif
-/** Driver mode NAN bit */
-#define DRV_MODE_NAN MBIT(4)
-/** Maximum NAN BSS */
-#define MAX_NAN_BSS 1
-/** Default NAN BSS */
-#define DEF_NAN_BSS 1
-
-/**Driver mode 802_11P bit**/
-#define DRV_MODE_11P MBIT(5)
-/**Maxinmum 802_11P BSS**/
-#define MAX_11P_BSS 1
-/**Default 802_11P BSS**/
-#define DEF_11P_BSS 1
+#endif /* WIFI_DIRECT_SUPPORT */
 
 #define DRV_MODE_WLAN (MBIT(0) | MBIT(1) | MBIT(2) | MBIT(3) | MBIT(4))
 
@@ -1100,7 +1040,7 @@ struct debug_data_priv {
 /** IP address operation: Remove */
 #define IPADDR_OP_REMOVE 0
 
-#define TCP_ACK_MAX_HOLD    9
+#define TCP_ACK_MAX_HOLD 9
 #define DROP_TCP_ACK 1
 #define HOLD_TCP_ACK 2
 struct tcp_sess {
@@ -1158,7 +1098,7 @@ typedef struct _woal_evt_buf {
 	/** Event len */
 	t_u16 event_len;
 	/** Event buffer */
-	t_u8 event_buf[1500];
+	t_u8 event_buf[1024];
 } woal_evt_buf;
 
 /** woal event */
@@ -1172,7 +1112,7 @@ struct woal_event {
 	union {
 		chan_band_info chan_info;
 		woal_evt_buf evt;
-		mlan_ds_assoc_info assoc_info;
+		mlan_ds_misc_assoc_rsp assoc_resp;
 		int reason_code;
 	};
 };
@@ -1182,8 +1122,8 @@ typedef struct {
 	/** number of protocols in protocol array*/
 	t_u8 protocol_num;
 	/** protocols supported */
-	t_u16 protocols[];
-} __ATTRIB_PACK__ dot11p_protocol;
+	t_u16 protocols[MAX_NUM_ETHER_TYPE];
+} __ATTRIB_PACK__ dot11_protocol;
 typedef struct {
 	/** Data rate in unit of 0.5Mbps */
 	t_u16 datarate;
@@ -1220,6 +1160,75 @@ struct pmksa_entry {
 	struct list_head link;
 	u8 bssid[ETH_ALEN];
 	u8 pmkid[PMKID_LEN];
+};
+
+/** default rssi low threshold */
+#define TDLS_RSSI_LOW_THRESHOLD 55
+/** default rssi high threshold */
+#define TDLS_RSSI_HIGH_THRESHOLD 50
+/** TDLS idle time */
+#define TDLS_IDLE_TIME (10 * HZ)
+/** TDLS max failure count */
+#define TDLS_MAX_FAILURE_COUNT 4
+/** TDLS tear down reason */
+#define TDLS_TEARN_DOWN_REASON_UNSPECIFIC 26
+
+/** TDLS status */
+typedef enum _tdlsStatus_e {
+	TDLS_NOT_SETUP = 0,
+	TDLS_SETUP_INPROGRESS,
+	TDLS_SETUP_COMPLETE,
+	TDLS_SETUP_FAILURE,
+	TDLS_TEAR_DOWN,
+	TDLS_SWITCHING_CHANNEL,
+	TDLS_IN_BASE_CHANNEL,
+	TDLS_IN_OFF_CHANNEL,
+} tdlsStatus_e;
+
+/** tdls peer_info */
+struct tdls_peer {
+	struct list_head link;
+	/** MAC address information */
+	t_u8 peer_addr[ETH_ALEN];
+	/** rssi */
+	int rssi;
+	/** jiffies with rssi */
+	long rssi_jiffies;
+	/** link status */
+	tdlsStatus_e link_status;
+	/** num of set up failure */
+	t_u8 num_failure;
+};
+
+struct rf_test_mode_data {
+	/* tx antenna num */
+	t_u32 tx_antenna;
+	/* rx antenna num */
+	t_u32 rx_antenna;
+	/* radio mode */
+	t_u32 radio_mode[2];
+	/* RF band */
+	t_u32 band;
+	/* RF bandwidth */
+	t_u32 bandwidth;
+	/* RF channel */
+	t_u32 channel;
+	/* Total Rx ucast/mcast/bcast pkt count */
+	t_u32 rx_tot_pkt_count;
+	/* Rx mcast/bcast pkt count */
+	t_u32 rx_mcast_bcast_pkt_count;
+	/* Rx fcs error count */
+	t_u32 rx_pkt_fcs_err_count;
+	/* Tx power config values */
+	t_u32 tx_power_data[3];
+	/* Tx continuous config values */
+	t_u32 tx_cont_data[6];
+	/* Tx frame config values */
+	t_u32 tx_frame_data[20];
+	/* HE TB Tx values */
+	t_u32 he_tb_tx[5];
+	/* BSSID */
+	t_u8 bssid[ETH_ALEN];
 };
 
 /** Number of samples in histogram (/proc/mwlan/adapterX/mlan0/histogram).*/
@@ -1281,7 +1290,7 @@ struct _moal_private {
 	t_u8 current_addr[ETH_ALEN];
 	/** Media connection status */
 	BOOLEAN media_connected;
-    /** mclist work queue */
+	/** mclist work queue */
 	struct workqueue_struct *mclist_workqueue;
 	/** mclist work */
 	struct work_struct mclist_work;
@@ -1298,16 +1307,16 @@ struct _moal_private {
 	BOOLEAN bss_started;
 	/** host based uap flag */
 	BOOLEAN uap_host_based;
-    /** transition channel */
+	/** transition channel */
 	t_u8 trans_chan;
+	/** uAP skip CAC*/
+	BOOLEAN skip_cac;
 	/** tx block flag */
 	BOOLEAN uap_tx_blocked;
-#if defined(DFS_TESTING_SUPPORT)
 	/** user cac period */
 	t_u32 user_cac_period_msec;
 	/** channel under nop */
 	BOOLEAN chan_under_nop;
-#endif
 #ifdef UAP_CFG80211
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
 	/** current working channel */
@@ -1329,6 +1338,8 @@ struct _moal_private {
 	t_u32 ip_addr_type;
 	/** IP addr */
 	t_u8 ip_addr[IPADDR_LEN];
+	t_u8 ipv6_addr_configured;
+	t_u8 ipv6_addr[16];
 #ifdef STA_SUPPORT
 	/** scan type */
 	t_u8 scan_type;
@@ -1369,7 +1380,7 @@ struct _moal_private {
 	t_u8 conn_wep_key[MAX_WEP_KEY_SIZE];
 	/** connection param */
 	struct cfg80211_connect_params sme_current;
-    /** station info */
+	/** station info */
 	struct station_info *sinfo;
 	/* associcate bss */
 	struct cfg80211_bss *assoc_bss;
@@ -1470,8 +1481,8 @@ struct _moal_private {
 	wait_queue_head_t ft_wait_q __ATTRIB_ALIGN__;
 	/** ft wait condition */
 	t_bool ft_wait_condition;
-#endif				/* STA_SUPPORT */
-#endif				/* STA_CFG80211 */
+#endif /* STA_SUPPORT */
+#endif /* STA_CFG80211 */
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
 	/** flag for host_mlme */
 	t_u8 host_mlme;
@@ -1489,7 +1500,7 @@ struct _moal_private {
 	struct proc_dir_entry *hist_entry;
 	/** ant_hist_proc_data */
 	wlan_hist_proc_data hist_proc[MAX_ANTENNA_NUM];
-#endif				/* CONFIG_PROC_FS */
+#endif /* CONFIG_PROC_FS */
 #ifdef STA_SUPPORT
 	/** Nickname */
 	t_u8 nick_name[16];
@@ -1505,7 +1516,7 @@ struct _moal_private {
 	BOOLEAN reassoc_on;
 	/** Set asynced essid flag */
 	BOOLEAN set_asynced_essid_flag;
-#endif				/* REASSOCIATION */
+#endif /* REASSOCIATION */
 	/** Report scan result */
 	t_u8 report_scan_result;
 	/** wpa_version */
@@ -1514,7 +1525,7 @@ struct _moal_private {
 	t_u8 key_mgmt;
 	/** rx_filter */
 	t_u8 rx_filter;
-#endif				/* STA_SUPPORT */
+#endif /* STA_SUPPORT */
 	/** Rate index */
 	t_u16 rate_index;
 #if defined(STA_WEXT) || defined(UAP_WEXT)
@@ -1549,9 +1560,18 @@ struct _moal_private {
 	t_u8 tcp_ack_max_hold;
 	/** TCP session spin lock */
 	spinlock_t tcp_sess_lock;
+	/** tcp list */
+	struct list_head tdls_list;
+	/** tdls spin lock */
+	spinlock_t tdls_lock;
+	/** auto tdls  flag */
+	t_u8 enable_auto_tdls;
+	/** check tx packet for tdls peer */
+	t_u8 tdls_check_tx;
 #if CFG80211_VERSION_CODE > KERNEL_VERSION(2, 6, 29)
 	atomic_t wmm_tx_pending[4];
 #endif
+	struct sk_buff_head tx_q;
 	/** per interface extra headroom */
 	t_u16 extra_tx_head_len;
 	/** TX status spin lock */
@@ -1564,25 +1584,22 @@ struct _moal_private {
 	phgm_data hist_data[MAX_ANTENNA_NUM];
 	t_u8 random_mac[MLAN_MAC_ADDR_LENGTH];
 	BOOLEAN assoc_with_mac;
-	dot11p_protocol *dot11p_protocols;
-	t_u8 enable_fils;
-	t_u16 csi_seq;
-	/** 0-disable, 1-enable */
-	t_u16 csi_enable;
-	/** default-ASCII, 1-binary */
-	t_u8 csi_dump_format;
-	/** total length of csi dump */
-	t_u32 csi_dump_len;
-	/** path name of csi dump */
-	char csi_dump_path[64];
-	/** CSI config */
-	mlan_ds_csi_params csi_config;
+	t_u8 gtk_data_ready;
+	mlan_ds_misc_gtk_rekey_data gtk_rekey_data;
+	dot11_protocol tx_protocols;
+	dot11_protocol rx_protocols;
+#if defined(DRV_EMBEDDED_AUTHENTICATOR) || defined(DRV_EMBEDDED_SUPPLICANT)
+	/** hostcmd_wait_q */
+	wait_queue_head_t hostcmd_wait_q __ATTRIB_ALIGN__;
+	/** hostcmd_wait_condition */
+	t_bool hostcmd_wait_condition;
+#endif
 	void *rings[RING_ID_MAX];
 	t_u8 pkt_fate_monitor_enable;
 	void *packet_filter;
-	void *nan_cb;
 };
 
+#ifdef SDIO
 #define DUMP_FW_SDIO_V2 2
 #define DUMP_FW_SDIO_V3 3
 
@@ -1592,6 +1609,7 @@ typedef struct _dump_reg_t {
 	t_u8 reg_table[DUMP_REG_MAX];
 	t_u8 reg_table_size;
 } dump_reg_t;
+#endif
 
 #define FW_NAMW_MAX_LEN 64
 
@@ -1620,13 +1638,18 @@ typedef struct _card_info {
 	/** rx_rate_max for hist_data: 11N: 76  11AC:196 11AX: 412 */
 	t_u16 rx_rate_max;
 	t_u8 histogram_table_num;
-	/* host interface selection reg */
+	/* feature_control */
+	t_u32 feature_control;
+	/* Revision id register */
+	t_u32 rev_id_reg;
+	/* host interface selection reg*/
 	t_u32 host_strap_reg;
 	/* Chip Magic Register */
 	t_u32 magic_reg;
 	/* FW Name */
 	char fw_name[FW_NAMW_MAX_LEN];
 	char fw_name_wlan[FW_NAMW_MAX_LEN];
+#ifdef SDIO
 	t_u8 dump_fw_info;
 	t_u8 dump_fw_ctrl_reg;
 	t_u8 dump_fw_start_reg;
@@ -1640,189 +1663,31 @@ typedef struct _card_info {
 	t_u8 fw_reset_val;
 	t_u32 slew_rate_reg;
 	t_u8 slew_rate_bit_offset;
-	t_u8 sniffer_support;
+#endif
+	t_u8 per_pkt_cfg_support;
 } card_info;
 
-/** channel_field.flags */
-#define CHANNEL_FLAGS_TURBO 0x0010
-#define CHANNEL_FLAGS_CCK 0x0020
-#define CHANNEL_FLAGS_OFDM 0x0040
-#define CHANNEL_FLAGS_2GHZ 0x0080
-#define CHANNEL_FLAGS_5GHZ 0x0100
-#define CHANNEL_FLAGS_ONLY_PASSIVSCAN_ALLOW 0x0200
-#define CHANNEL_FLAGS_DYNAMIC_CCK_OFDM 0x0400
-#define CHANNEL_FLAGS_GFSK 0x0800
-struct channel_field {
-	/** frequency */
-	t_u16 frequency;
-	/** flags */
-	t_u16 flags;
-} __packed;
+#define GTK_REKEY_OFFLOAD_DISABLE 0
+#define GTK_REKEY_OFFLOAD_ENABLE 1
+#define GTK_REKEY_OFFLOAD_SUSPEND 2
 
-/** mcs_field.known */
-#define MCS_KNOWN_BANDWIDTH 0x01
-#define MCS_KNOWN_MCS_INDEX_KNOWN 0x02
-#define MCS_KNOWN_GUARD_INTERVAL 0x04
-#define MCS_KNOWN_HT_FORMAT 0x08
-#define MCS_KNOWN_FEC_TYPE 0x10
-#define MCS_KNOWN_STBC_KNOWN 0x20
-#define MCS_KNOWN_NESS_KNOWN 0x40
-#define MCS_KNOWN_NESS_DATA 0x80
-/** bandwidth */
-#define RX_BW_20 0
-#define RX_BW_40 1
-#define RX_BW_20L 2
-#define RX_BW_20U 3
-#define RX_BW_80 4
-/** mcs_field.flags
-The flags field is any combination of the following:
-0x03    bandwidth - 0: 20, 1: 40, 2: 20L, 3: 20U
-0x04    guard interval - 0: long GI, 1: short GI
-0x08    HT format - 0: mixed, 1: greenfield
-0x10    FEC type - 0: BCC, 1: LDPC
-0x60    Number of STBC streams
-0x80    Ness - bit 0 (LSB) of Number of extension spatial streams */
-struct mcs_field {
-	/** known */
-	t_u8 known;
-	/** flags */
-	t_u8 flags;
-	/** mcs */
-	t_u8 mcs;
-} __packed;
-
-/** vht_field.known */
-#define VHT_KNOWN_STBC 0x0001
-#define VHT_KNOWN_TXOP_PS_NA 0x0002
-#define VHT_KNOWN_GI 0x0004
-#define VHT_KNOWN_SGI_NSYM_DIS 0x0008
-#define VHT_KNOWN_LDPC_EXTRA_OFDM_SYM 0x0010
-#define VHT_KNOWN_BEAMFORMED 0x0020
-#define VHT_KNOWN_BANDWIDTH 0x0040
-#define VHT_KNOWN_GROUP_ID 0x0080
-#define VHT_KNOWN_PARTIAL_AID 0x0100
-
-/** vht_field.flags */
-#define VHT_FLAG_STBC 0x01
-#define VHT_FLAG_TXOP_PS_NA 0x02
-#define VHT_FLAG_SGI 0x04
-#define VHT_FLAG_SGI_NSYM_M10_9 0x08
-#define VHT_FLAG_LDPC_EXTRA_OFDM_SYM 0x10
-#define VHT_FLAG_BEAMFORMED 0x20
-
-/** vht_field.coding */
-#define VHT_CODING_LDPC_USER0 0x01
-#define VHT_CODING_LDPC_USER1 0x02
-#define VHT_CODING_LDPC_USER2 0x04
-#define VHT_CODING_LDPC_USER3 0x08
-
-/** vht_field */
-struct vht_field {
-	/** pad: for vht field require 2 bytes alignment */
-	t_u8 pad;
-	/** known */
-	t_u16 known;
-	/** flags */
-	t_u8 flags;
-	/** bandwidth */
-	t_u8 bandwidth;
-	/** mcs_nss for up to 4 users */
-	t_u8 mcs_nss[4];
-	/** coding for up to 4 users */
-	t_u8 coding;
-	/** group_id */
-	t_u8 group_id;
-	/** partial_aid */
-	t_u16 partial_aid;
-} __packed;
-
-/** radiotap_body.flags */
-#define RADIOTAP_FLAGS_DURING_CFG 0x01
-#define RADIOTAP_FLAGS_SHORT_PREAMBLE 0x02
-#define RADIOTAP_FLAGS_WEP_ENCRYPTION 0x04
-#define RADIOTAP_FLAGS_WITH_FRAGMENT 0x08
-#define RADIOTAP_FLAGS_INCLUDE_FCS 0x10
-#define RADIOTAP_FLAGS_PAD_BTW_HEADER_PAYLOAD 0x20
-#define RADIOTAP_FLAGS_FAILED_FCS_CHECK 0x40
-#define RADIOTAP_FLAGS_USE_SGI_HT 0x80
-struct radiotap_body {
-	/** timestamp */
-	t_u64 timestamp;
-	/** flags */
-	t_u8 flags;
-	/** rate for LG pkt, RATE flag will be present, it shows datarate in
-	 * 500Kbps. For HT/VHT pkt, RATE flag will not be present, it is not
-	 * used. */
-	t_u8 rate;
-	/** channel */
-	struct channel_field channel;
-	/** antenna_signal */
-	t_s8 antenna_signal;
-	/** antenna_noise */
-	t_s8 antenna_noise;
-	/** antenna */
-	t_u8 antenna;
-	/** union for HT/VHT pkt */
-	union {
-		/** mcs field */
-		struct mcs_field mcs;
-		/** vht field */
-		struct vht_field vht;
-	} u;
-} __packed;
-
-struct radiotap_header {
-	struct ieee80211_radiotap_header hdr;
-	struct radiotap_body body;
-} __packed;
-
-/** Monitor Band Channel Config */
-typedef struct _netmon_band_chan_cfg {
-	t_u32 band;
-	t_u32 channel;
-	t_u32 chan_bandwidth;
-} netmon_band_chan_cfg;
-
-#if defined(STA_CFG80211) && defined(UAP_CFG80211)
-typedef struct _monitor_iface {
-	/* The priv data of interface on which the monitor iface is based */
-	moal_private *priv;
-	struct wireless_dev wdev;
-	/** 0 - Disabled
-	 * 1 - Channel Specified sniffer mode
-	 * 2 - In-Channel sniffer mode
-	 */
-	int sniffer_mode;
-	int radiotap_enabled;
-	/* The net_device on which the monitor iface is based. */
-	struct net_device *base_ndev;
-	struct net_device *mon_ndev;
-	char ifname[IFNAMSIZ];
-	int flag;
-#if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
-	struct cfg80211_chan_def chandef;
-#endif
-	/** Netmon Band Channel Config */
-	netmon_band_chan_cfg band_chan_cfg;
-	/** Monitor device statistics structure */
-	struct net_device_stats stats;
-} monitor_iface;
-#endif
+#define MAX_KEEP_ALIVE_ID 4
 
 /** Operation data structure for MOAL bus interfaces */
 typedef struct _moal_if_ops {
-	mlan_status (*register_dev) (moal_handle *handle);
-	void (*unregister_dev) (moal_handle *handle);
-	mlan_status (*read_reg) (moal_handle *handle, t_u32 reg, t_u32 *data);
-	mlan_status (*write_reg) (moal_handle *handle, t_u32 reg, t_u32 data);
-	mlan_status (*read_data_sync) (moal_handle *handle, mlan_buffer *pmbuf,
+	mlan_status (*register_dev)(moal_handle *handle);
+	void (*unregister_dev)(moal_handle *handle);
+	mlan_status (*read_reg)(moal_handle *handle, t_u32 reg, t_u32 *data);
+	mlan_status (*write_reg)(moal_handle *handle, t_u32 reg, t_u32 data);
+	mlan_status (*read_data_sync)(moal_handle *handle, mlan_buffer *pmbuf,
+				      t_u32 port, t_u32 timeout);
+	mlan_status (*write_data_sync)(moal_handle *handle, mlan_buffer *pmbuf,
 				       t_u32 port, t_u32 timeout);
-	mlan_status (*write_data_sync) (moal_handle *handle, mlan_buffer *pmbuf,
-					t_u32 port, t_u32 timeout);
-	mlan_status (*get_fw_name) (moal_handle *handle);
-	void (*dump_fw_info) (moal_handle *handle);
-	int (*dump_reg_info) (moal_handle *handle, t_u8 *buf);
-	void (*reg_dbg) (moal_handle *handle);
+	mlan_status (*get_fw_name)(moal_handle *handle);
+	void (*dump_fw_info)(moal_handle *handle);
+	int (*dump_reg_info)(moal_handle *handle, t_u8 *buf);
+	void (*reg_dbg)(moal_handle *handle);
+	t_u8 (*is_second_mac)(moal_handle *handle);
 } moal_if_ops;
 
 #define WIFI_DIRECT_KERNEL_VERSION KERNEL_VERSION(2, 6, 39)
@@ -1836,21 +1701,28 @@ enum ext_mod_params {
 	EXT_REQ_FW_NOWAIT,
 	EXT_FW_SERIAL,
 	EXT_PM_KEEP_POWER,
+#ifdef SDIO
 	EXT_INTMODE,
 #ifdef SDIO_SUSPEND_RESUME
 	EXT_SHUTDOWN_HS,
 #endif
-	EXT_START_11AI_SCAN,
+#endif
+#if defined(USB)
+	EXT_SKIP_FWDNLD,
+#endif
+	EXT_AGGR_CTRL,
 	EXT_LOW_PW_MODE,
+#ifdef SDIO
 	EXT_SDIO_RX_AGGR,
+#endif
 	EXT_PMIC,
 	EXT_DISCONNECT_ON_SUSPEND,
+	EXT_HS_MIMO_SWITCH,
 	EXT_FIX_BCN_BUF,
 	EXT_NAPI,
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
 	EXT_DFS_OFFLOAD,
 #endif
-	EXT_CFG80211_DRCS,
 	EXT_DISABLE_REGD_BY_DRIVER,
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
 	EXT_COUNTRY_IE_IGNORE,
@@ -1861,6 +1733,7 @@ enum ext_mod_params {
 	EXT_HOST_MLME,
 #endif
 #endif
+	EXT_TX_WORK,
 	EXT_RPS,
 	EXT_TX_SKB_CLONE,
 	EXT_PMQOS,
@@ -1877,7 +1750,7 @@ typedef struct _moal_mod_para {
 	char *mac_addr;
 #ifdef MFG_CMD_SUPPORT
 	int mfg_mode;
-#endif				/* MFG_CMD_SUPPORT */
+#endif /* MFG_CMD_SUPPORT */
 	char *hw_name;
 	int drv_mode;
 #ifdef DEBUG_LEVEL1
@@ -1886,21 +1759,20 @@ typedef struct _moal_mod_para {
 #ifdef STA_SUPPORT
 	int max_sta_bss;
 	char *sta_name;
-#endif				/* STA_SUPPORT */
+#endif /* STA_SUPPORT */
 #ifdef UAP_SUPPORT
 	int max_uap_bss;
 	char *uap_name;
 	int uap_max_sta;
 	int wacp_mode;
-#endif				/* UAP_SUPPORT */
+#endif /* UAP_SUPPORT */
+#ifdef WIFI_DIRECT_SUPPORT
 	int max_wfd_bss;
 	char *wfd_name;
 #if defined(STA_CFG80211) && defined(UAP_CFG80211)
 	int max_vir_bss;
 #endif
-	char *nan_name;
-	int max_nan_bss;
-	int max_11p_bss;
+#endif /* WIFI_DIRECT_SUPPORT */
 	int auto_ds;
 	int net_rx;
 	int amsdu_deaggr;
@@ -1911,11 +1783,15 @@ typedef struct _moal_mod_para {
 	int scan_chan_gap;
 	int sched_scan;
 	int max_tx_buf;
+#if defined(SDIO)
 	int gpiopin;
+#endif
 #if defined(STA_SUPPORT)
 	int cfg_11d;
 #endif
+#if defined(SDIO)
 	int slew_rate;
+#endif
 	char *dpd_data_cfg;
 	char *init_cfg;
 	char *cal_data_cfg;
@@ -1927,23 +1803,105 @@ typedef struct _moal_mod_para {
 	int wq_sched_prio;
 	int wq_sched_policy;
 	int rx_work;
-#ifdef ANDROID_KERNEL
-	int wakelock_timeout;
+#ifdef USB
+	int usb_aggr;
 #endif
+#ifdef PCIE
+	int pcie_int_mode;
+	int ring_size;
+#endif /* PCIE */
+	int wakelock_timeout;
 	unsigned int dev_cap_mask;
+#if defined(SD8997) || defined(PCIE8997) || defined(USB8997) ||                \
+	defined(SD8977) || defined(SD8987) || defined(SD9098) ||               \
+	defined(USB9098) || defined(PCIE9098) || defined(SD9097) ||            \
+	defined(USB9097) || defined(PCIE9097) || defined(SD8978) ||            \
+	defined(SD9177)
 	int pmic;
+#endif
 	int antcfg;
 	unsigned int uap_oper_ctrl;
 	int hs_wake_interval;
 	int indication_gpio;
 	int indrstcfg;
+#ifdef WIFI_DIRECT_SUPPORT
 	int GoAgeoutTime;
+#endif
+	int gtk_rekey_offload;
 	t_u16 multi_dtim;
 	t_u16 inact_tmo;
-	int drcs_chantime_mode;
 	char *reg_alpha2;
 	int dfs53cfg;
 } moal_mod_para;
+
+void woal_tp_acnt_timer_func(void *context);
+void woal_set_tp_state(moal_private *priv);
+#define MAX_TP_ACCOUNT_DROP_POINT_NUM 5
+#define RX_DROP_P1 (MAX_TP_ACCOUNT_DROP_POINT_NUM)
+#define RX_DROP_P2 (MAX_TP_ACCOUNT_DROP_POINT_NUM + 1)
+#define RX_DROP_P3 (MAX_TP_ACCOUNT_DROP_POINT_NUM + 2)
+#define RX_DROP_P4 (MAX_TP_ACCOUNT_DROP_POINT_NUM + 3)
+#define RX_DROP_P5 (MAX_TP_ACCOUNT_DROP_POINT_NUM + 4)
+#define TXRX_MAX_SAMPLE 60
+#define RX_TIME_PKT (MAX_TP_ACCOUNT_DROP_POINT_NUM + 5)
+#define TX_TIME_PKT (MAX_TP_ACCOUNT_DROP_POINT_NUM + 6)
+
+typedef struct _moal_tp_acnt_t {
+	/* TX accounting */
+	unsigned long tx_packets[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long tx_packets_last[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long tx_packets_rate[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long tx_bytes[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long tx_bytes_last[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long tx_bytes_rate[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long tx_amsdu_cnt;
+	unsigned long tx_amsdu_cnt_last;
+	unsigned long tx_amsdu_cnt_rate;
+	unsigned long tx_amsdu_pkt_cnt;
+	unsigned long tx_amsdu_pkt_cnt_last;
+	unsigned long tx_amsdu_pkt_cnt_rate;
+	unsigned long tx_intr_cnt;
+	unsigned long tx_intr_last;
+	unsigned long tx_intr_rate;
+	unsigned long tx_pending;
+	unsigned long tx_xmit_skb_realloc_cnt;
+	unsigned long tx_stop_queue_cnt;
+	unsigned long tx_delay_driver[TXRX_MAX_SAMPLE];
+
+	/** RX accounting */
+	unsigned long rx_packets[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long rx_packets_last[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long rx_packets_rate[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long rx_bytes[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long rx_bytes_last[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long rx_bytes_rate[MAX_TP_ACCOUNT_DROP_POINT_NUM];
+	unsigned long rx_amsdu_cnt;
+	unsigned long rx_amsdu_cnt_last;
+	unsigned long rx_amsdu_cnt_rate;
+	unsigned long rx_amsdu_pkt_cnt;
+	unsigned long rx_amsdu_pkt_cnt_last;
+	unsigned long rx_amsdu_pkt_cnt_rate;
+	unsigned long rx_intr_cnt;
+	unsigned long rx_intr_last;
+	unsigned long rx_intr_rate;
+	unsigned long rx_pending;
+	unsigned long rx_paused_cnt;
+	unsigned long rx_rdptr_full_cnt;
+	unsigned long rx_delay1_driver[TXRX_MAX_SAMPLE];
+	unsigned long rx_delay2_driver[TXRX_MAX_SAMPLE];
+	unsigned long rx_delay_kernel[TXRX_MAX_SAMPLE];
+	unsigned long rx_amsdu_delay[TXRX_MAX_SAMPLE];
+	unsigned long rx_amsdu_copy_delay[TXRX_MAX_SAMPLE];
+	t_u8 rx_amsdu_index;
+	t_u8 rx_index;
+	t_u8 tx_index;
+	/* TP account mode 0-disable 1-enable */
+	unsigned int on;
+	/* drop point */
+	unsigned int drop_point;
+	/* periodic timer */
+	moal_drv_timer timer;
+} moal_tp_acnt_t;
 
 /** Handle data structure for MOAL */
 struct _moal_handle {
@@ -1956,11 +1914,6 @@ struct _moal_handle {
 	/** Bss attr */
 	moal_drv_mode drv_mode;
 
-#if defined(STA_CFG80211) && defined(UAP_CFG80211)
-	/** Monitor interface */
-	monitor_iface *mon_if;
-#endif
-
 	/** set mac address flag */
 	t_u8 set_mac_addr;
 	/** MAC address */
@@ -1971,6 +1924,10 @@ struct _moal_handle {
 	/** Proc top level directory entry name */
 	char proc_wlan_name[32];
 #endif
+#ifdef USB
+	/** Firmware download skip flag */
+	t_u8 skip_fw_dnld;
+#endif /* USB */
 	/** Firmware */
 	const struct firmware *firmware;
 	/** Firmware request start time */
@@ -2006,7 +1963,6 @@ struct _moal_handle {
 	t_u16 init_wait_q_woken;
 	/** Init wait queue */
 	wait_queue_head_t init_wait_q __ATTRIB_ALIGN__;
-#if defined(SDIO_SUSPEND_RESUME)
 	/** Device suspend flag */
 	BOOLEAN is_suspended;
 #ifdef SDIO_SUSPEND_RESUME
@@ -2015,7 +1971,10 @@ struct _moal_handle {
 	/** hs_shutdown in process flag  */
 	BOOLEAN shutdown_hs_in_process;
 #endif
-#endif
+	/** Suspend wait queue token */
+	t_u16 suspend_wait_q_woken;
+	/** Suspend wait queue */
+	wait_queue_head_t suspend_wait_q __ATTRIB_ALIGN__;
 	/** Host Sleep activated flag */
 	t_u8 hs_activated;
 	/** Host Sleep activated event wait queue token */
@@ -2029,7 +1988,7 @@ struct _moal_handle {
 	int irq_oob_wakeup;
 	/** wakeup notify flag */
 	bool wake_by_wifi;
-#endif				/* IMX_SUPPORT */
+#endif /* IMX_SUPPORT */
 	/** Card pointer */
 	t_void *card;
 	/** Rx pending in MLAN */
@@ -2046,14 +2005,16 @@ struct _moal_handle {
 	atomic_t vmalloc_count;
 	/** mlan buffer alloc count */
 	atomic_t mbufalloc_count;
-#if defined(SDIO_SUSPEND_RESUME)
+#ifdef PCIE
+	/** Malloc consistent count */
+	atomic_t malloc_cons_count;
+#endif
 	/** hs skip count */
 	t_u32 hs_skip_count;
 	/** hs force count */
 	t_u32 hs_force_count;
 	/** suspend_fail flag */
 	BOOLEAN suspend_fail;
-#endif
 #ifdef REASSOCIATION
 	/** Re-association thread */
 	moal_thread reassoc_thread;
@@ -2065,11 +2026,7 @@ struct _moal_handle {
 	struct semaphore reassoc_sem;
 	/** Bitmap for re-association on/off */
 	t_u8 reassoc_on;
-#endif				/* REASSOCIATION */
-	/** RTT capability */
-	wifi_rtt_capabilities rtt_capa;
-	/** RTT config */
-	wifi_rtt_config_params_t rtt_params;
+#endif /* REASSOCIATION */
 	/** Driver workqueue */
 	struct workqueue_struct *workqueue;
 	/** main work */
@@ -2092,6 +2049,10 @@ struct _moal_handle {
 	spinlock_t evt_lock;
 	/** event queue */
 	struct list_head evt_queue;
+	/** tx workqueue */
+	struct workqueue_struct *tx_workqueue;
+	/** tx work */
+	struct work_struct tx_work;
 	/** remain on channel flag */
 	t_u8 remain_on_channel;
 	/** bss index for remain on channel */
@@ -2101,7 +2062,7 @@ struct _moal_handle {
 	/** Country code for regulatory domain */
 	t_u8 country_code[COUNTRY_CODE_LEN];
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(4, 0, 0)
-    /** regulatory work */
+	/** regulatory work */
 	struct work_struct regulatory_work;
 #endif
 	/** band */
@@ -2123,6 +2084,11 @@ struct _moal_handle {
 	t_u64 cookie;
 #endif
 
+#ifdef WIFI_DIRECT_SUPPORT
+	/** NoA duration */
+	t_u32 noa_duration;
+	/** NoA interval */
+	t_u32 noa_interval;
 	/** miracast mode */
 	t_u8 miracast_mode;
 	/** scan time in miracast mode */
@@ -2131,6 +2097,7 @@ struct _moal_handle {
 	BOOLEAN is_go_timer_set;
 	/** GO timer */
 	moal_drv_timer go_timer __ATTRIB_ALIGN__;
+#endif
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 2, 0)
 	/** cfg80211_suspend status */
 	t_u8 cfg80211_suspend;
@@ -2140,6 +2107,8 @@ struct _moal_handle {
 	t_u8 fw_dbg;
 	/** reg debug flag */
 	t_u8 reg_dbg;
+#ifdef SDIO
+#endif /* SDIO */
 	/** Netlink kernel socket */
 	struct sock *nl_sk;
 	/** Netlink kernel socket number */
@@ -2164,7 +2133,7 @@ struct _moal_handle {
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 12, 0)
 	/* CAC channel info */
 	struct cfg80211_chan_def dfs_channel;
-	/* time set flag */
+	/* time set flag*/
 	BOOLEAN is_cac_timer_set;
 	/** cac_timer */
 	moal_drv_timer cac_timer __ATTRIB_ALIGN__;
@@ -2178,14 +2147,16 @@ struct _moal_handle {
 	/** channel switch wait queue */
 	wait_queue_head_t chsw_wait_q __ATTRIB_ALIGN__;
 #endif
-#ifdef DFS_TESTING_SUPPORT
 	/** cac period length, valid only when dfs testing is enabled */
 	long cac_period_jiffies;
 	/** cac restart*/
 	t_u8 cac_restart;
-#endif
 	/** handle index - for multiple card supports */
 	t_u8 handle_idx;
+#if defined(USB)
+	/** Flag to indicate boot state */
+	t_u8 boot_state;
+#endif /* USB_NEW_FW_DNLD */
 #ifdef SDIO_MMC_DEBUG
 	/** cmd53 write state */
 	u8 cmd53w;
@@ -2214,25 +2185,33 @@ struct _moal_handle {
 	t_u8 driver_state;
 	/** ioctl timeout */
 	t_u8 ioctl_timeout;
+	/** Pointer of fw dump buffer */
+	t_u8 *drv_dump_buf;
+	/** drv dump len */
+	t_u32 drv_dump_len;
 	/** FW dump state */
 	t_u8 fw_dump;
-    /** event fw dump */
+	/** event fw dump */
 	t_u8 event_fw_dump;
 	/** Re-association timer set flag */
 	BOOLEAN is_fw_dump_timer_set;
 	/** Re-association timer */
 	moal_drv_timer fw_dump_timer __ATTRIB_ALIGN__;
-    /** fw dump buffer total len */
+	/** fw dump buffer total len */
 	t_u64 fw_dump_len;
+	/** Pointer of fw dump buffer */
+	t_u8 *fw_dump_buf;
 	/** FW dump full name */
 	t_u8 firmware_dump_file[128];
 
+#ifdef SDIO
 	/** cmd52 function */
 	t_u8 cmd52_func;
 	/** cmd52 register */
 	t_u8 cmd52_reg;
 	/** cmd52 value */
 	t_u8 cmd52_val;
+#endif
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 29)
 	/** spinlock to stop_queue/wake_queue*/
 	spinlock_t queue_lock;
@@ -2252,14 +2231,19 @@ struct _moal_handle {
 	/** Card specific driver version */
 	t_s8 driver_version[MLAN_MAX_VER_STR_LEN];
 	char *fwdump_fname;
-#ifdef ANDROID_KERNEL
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 5, 0)
 	struct wakeup_source ws;
 #else
 	struct wake_lock wake_lock;
 #endif
-#endif
+	t_u16 dfs_repeater_mode;
+	/* feature_control */
+	t_u32 feature_control;
 	struct notifier_block woal_notifier;
+#if IS_ENABLED(CONFIG_IPV6)
+	struct notifier_block woal_inet6_notifier;
+#endif
+	mlan_ds_misc_keep_alive keep_alive[MAX_KEEP_ALIVE_ID];
 	struct net_device napi_dev;
 	struct napi_struct napi_rx;
 	/* bus interface operations */
@@ -2288,6 +2272,18 @@ struct _moal_handle {
 	wifi_timeval scan_time_start;
 	/** systime when scan event has no more event */
 	wifi_timeval scan_time_end;
+	/** seecond mac flag */
+	t_u8 second_mac;
+	/** moal handle for another mac */
+	void *pref_mac;
+	/** RF test mode status */
+	t_u8 rf_test_mode;
+	/** pointer to rf test mode data struct */
+	struct rf_test_mode_data *rf_data;
+	/** TP accounting parameters */
+	moal_tp_acnt_t tp_acnt;
+	BOOLEAN is_tp_acnt_timer_set;
+
 	t_u8 request_pm;
 #ifdef IMX_SUPPORT
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(5, 6, 0)
@@ -2298,7 +2294,6 @@ struct _moal_handle {
 	struct pm_qos_request woal_pm_qos_req;
 #endif
 #endif
-	t_u32 ips_ctrl;
 };
 
 /**
@@ -2308,8 +2303,7 @@ struct _moal_handle {
  *  @param idx      extended flags id
  *  @return			N/A
  */
-static inline void
-moal_extflg_set(moal_handle *handle, enum ext_mod_params idx)
+static inline void moal_extflg_set(moal_handle *handle, enum ext_mod_params idx)
 {
 	t_u8 *ext_fbyte;
 	ext_fbyte = &handle->params.ext_flgs[idx / 8];
@@ -2323,8 +2317,8 @@ moal_extflg_set(moal_handle *handle, enum ext_mod_params idx)
  *  @param idx      extended flags id
  *  @return			N/A
  */
-static inline void
-moal_extflg_clear(moal_handle *handle, enum ext_mod_params idx)
+static inline void moal_extflg_clear(moal_handle *handle,
+				     enum ext_mod_params idx)
 {
 	t_u8 *ext_fbyte;
 	ext_fbyte = &handle->params.ext_flgs[idx / 8];
@@ -2338,8 +2332,8 @@ moal_extflg_clear(moal_handle *handle, enum ext_mod_params idx)
  *  @param idx      extended flags id
  *  @return			value of extended flag
  */
-static inline t_u8
-moal_extflg_isset(moal_handle *handle, enum ext_mod_params idx)
+static inline t_u8 moal_extflg_isset(moal_handle *handle,
+				     enum ext_mod_params idx)
 {
 	t_u8 ext_fbyte;
 	ext_fbyte = handle->params.ext_flgs[idx / 8];
@@ -2353,8 +2347,7 @@ moal_extflg_isset(moal_handle *handle, enum ext_mod_params idx)
  *
  *  @return			N/A
  */
-static inline void
-woal_set_trans_start(struct net_device *dev)
+static inline void woal_set_trans_start(struct net_device *dev)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 31)
 	unsigned int i;
@@ -2375,8 +2368,7 @@ woal_set_trans_start(struct net_device *dev)
  *
  *  @return			N/A
  */
-static inline void
-woal_start_queue(struct net_device *dev)
+static inline void woal_start_queue(struct net_device *dev)
 {
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 29)
 	netif_start_queue(dev);
@@ -2395,8 +2387,7 @@ woal_start_queue(struct net_device *dev)
  *
  *  @return			N/A
  */
-static inline void
-woal_stop_queue(struct net_device *dev)
+static inline void woal_stop_queue(struct net_device *dev)
 {
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 29)
 	unsigned long flags;
@@ -2420,8 +2411,7 @@ woal_stop_queue(struct net_device *dev)
  *
  *  @return			N/A
  */
-static inline void
-woal_wake_queue(struct net_device *dev)
+static inline void woal_wake_queue(struct net_device *dev)
 {
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 29)
 	unsigned long flags;
@@ -2547,8 +2537,7 @@ extern t_u32 drvdbg;
 			printk(KERN_ALERT msg);                                \
 	} while (0)
 
-static inline void
-woal_print(t_u32 level, char *fmt, ...)
+static inline void woal_print(t_u32 level, char *fmt, ...)
 {
 }
 
@@ -2581,8 +2570,7 @@ woal_print(t_u32 level, char *fmt, ...)
 #define DBG_DUMP_BUF_LEN 64
 #define MAX_DUMP_PER_LINE 16
 
-static inline void
-hexdump(t_u32 level, char *prompt, t_u8 *buf, int len)
+static inline void hexdump(t_u32 level, char *prompt, t_u8 *buf, int len)
 {
 	int i;
 	char dbgdumpbuf[DBG_DUMP_BUF_LEN];
@@ -2696,8 +2684,8 @@ hexdump(t_u32 level, char *prompt, t_u8 *buf, int len)
  *
  *  @return          Pointer to moal_private
  */
-static inline moal_private *
-woal_get_priv(moal_handle *handle, mlan_bss_role bss_role)
+static inline moal_private *woal_get_priv(moal_handle *handle,
+					  mlan_bss_role bss_role)
 {
 	int i;
 
@@ -2720,8 +2708,8 @@ woal_get_priv(moal_handle *handle, mlan_bss_role bss_role)
  *
  *  @return          Pointer to moal_private
  */
-static inline moal_private *
-woal_get_priv_bss_type(moal_handle *handle, mlan_bss_type bss_type)
+static inline moal_private *woal_get_priv_bss_type(moal_handle *handle,
+						   mlan_bss_type bss_type)
 {
 	int i;
 
@@ -2735,11 +2723,25 @@ woal_get_priv_bss_type(moal_handle *handle, mlan_bss_type bss_type)
 	return NULL;
 }
 
+static inline moal_private *woal_get_vir_priv_bss_type(moal_handle *handle,
+						       mlan_bss_type bss_type)
+{
+	int i;
+
+	for (i = 0; i < MIN(handle->priv_num, MLAN_MAX_BSS_NUM); i++) {
+		if (handle->priv[i]) {
+			if (handle->priv[i]->bss_type == bss_type &&
+			    handle->priv[i]->bss_virtual)
+				return handle->priv[i];
+		}
+	}
+	return NULL;
+}
+
 #if defined(STA_CFG80211) || defined(UAP_CFG80211)
 #endif
 
-static inline void
-woal_get_monotonic_time(wifi_timeval * tv)
+static inline void woal_get_monotonic_time(wifi_timeval *tv)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 	struct timespec64 ts;
@@ -2897,10 +2899,9 @@ void woal_free_moal_handle(moal_handle *handle);
 /** shutdown fw */
 mlan_status woal_shutdown_fw(moal_private *priv, t_u8 wait_option);
 /* Functions in interface module */
-#ifdef ANDROID_KERNEL
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
-static inline void
-wakeup_source_init(struct wakeup_source *ws, const char *name)
+static inline void wakeup_source_init(struct wakeup_source *ws,
+				      const char *name)
 {
 	ENTER();
 
@@ -2913,8 +2914,7 @@ wakeup_source_init(struct wakeup_source *ws, const char *name)
 	LEAVE();
 }
 
-static inline void
-wakeup_source_trash(struct wakeup_source *ws)
+static inline void wakeup_source_trash(struct wakeup_source *ws)
 {
 	ENTER();
 
@@ -2928,9 +2928,8 @@ wakeup_source_trash(struct wakeup_source *ws)
 	LEAVE();
 }
 #endif
-#endif
 /** Add card */
-moal_handle *woal_add_card(void *card, struct device *dev, moal_if_ops * if_ops,
+moal_handle *woal_add_card(void *card, struct device *dev, moal_if_ops *if_ops,
 			   t_u16 card_type);
 /** Remove card */
 mlan_status woal_remove_card(void *card);
@@ -2981,9 +2980,6 @@ mlan_status woal_request_soft_reset(moal_handle *handle);
 #endif
 void woal_request_fw_reload(moal_handle *phandle, t_u8 mode);
 
-mlan_status woal_set_psk_11ai(moal_private *priv, t_u8 wait_option,
-			      const t_u8 *addr, const t_u8 *key, int key_len);
-
 /** Get debug information */
 mlan_status woal_get_debug_info(moal_private *priv, t_u8 wait_option,
 				mlan_debug_info *debug_info);
@@ -3001,7 +2997,7 @@ mlan_status woal_request_get_fw_info(moal_private *priv, t_u8 wait_option,
 				     mlan_fw_info *fw_info);
 /** Get channel of active intf */
 mlan_status woal_get_active_intf_channel(moal_private *priv,
-					 chan_band_info * channel);
+					 chan_band_info *channel);
 #ifdef STA_SUPPORT
 /** Request Exented Capability information */
 int woal_request_extcap(moal_private *priv, t_u8 *buf, t_u8 len);
@@ -3013,21 +3009,31 @@ mlan_status woal_set_get_hs_params(moal_private *priv, t_u16 action,
 				   t_u8 wait_option, mlan_ds_hs_cfg *hscfg);
 /** Cancel Host Sleep configuration */
 mlan_status woal_cancel_hs(moal_private *priv, t_u8 wait_option);
-#if defined(SDIO_SUSPEND_RESUME)
 /** Enable Host Sleep configuration */
 int woal_enable_hs(moal_private *priv);
 /** hs active timeout 2 second */
 #define HS_ACTIVE_TIMEOUT (2 * HZ)
-#endif
 /** Get wakeup reason */
 mlan_status woal_get_wakeup_reason(moal_private *priv,
 				   mlan_ds_hs_wakeup_reason *wakeup_reason);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 1, 0)
-void woal_create_dump_dir(moal_handle *phandle, char *dir_buf, int buf_size);
-#endif
-mlan_status woal_save_dump_info_to_file(char *dir_name, char *file_name,
-					t_u8 *buf, t_u32 buf_len);
-void woal_dump_drv_info(moal_handle *phandle, t_u8 *dir_name);
+#define FW_DUMP_INFO_LEN 0x280000
+/** mem dump header */
+typedef struct {
+	/** seq number */
+	t_u16 seq_num;
+	/** resvered */
+	t_u16 reserved;
+	/** type */
+	t_u16 type;
+	/** len */
+	t_u16 len;
+	/** start addr */
+	t_u32 start_addr;
+} mem_dump_header;
+int woal_save_dump_info_to_buf(moal_handle *phandle, t_u8 *src, t_u32 len,
+			       t_u32 type);
+void woal_append_end_block(moal_handle *phandle);
+t_u8 *woal_dump_drv_info(moal_handle *phandle, t_u32 *dump_len);
 
 #define FW_DUMP_TYPE_ENDED 0x002
 #define FW_DUMP_TYPE_MEM_ITCM 0x004
@@ -3038,16 +3044,14 @@ void woal_dump_drv_info(moal_handle *phandle, t_u8 *dir_name);
 #define FW_DUMP_TYPE_REG_CIU 0x00E
 #define FW_DUMP_TYPE_REG_APU 0x00F
 #define FW_DUMP_TYPE_REG_ICU 0x014
+#ifdef SDIO_MMC
 void woal_dump_firmware_info(moal_handle *phandle);
 void woal_dump_firmware_info_v2(moal_handle *phandle);
 void woal_dump_firmware_info_v3(moal_handle *phandle);
+#endif /* SDIO_MMC */
 /* Store the FW dumps received from events in a file */
 void woal_store_firmware_dump(moal_handle *phandle, pmlan_event pmevent);
 void woal_send_fw_dump_complete_event(moal_private *priv);
-
-/** save hostcmd response to file */
-t_void woal_save_host_cmdresp(moal_handle *phandle,
-			      mlan_cmdresp_event * pevent);
 
 int woal_pre_warmreset(moal_private *priv);
 int woal_warmreset(moal_private *priv);
@@ -3074,17 +3078,13 @@ void woal_ioctl_get_info_resp(moal_private *priv, mlan_ds_get_info *info);
 mlan_status woal_get_assoc_rsp(moal_private *priv,
 			       mlan_ds_misc_assoc_rsp *assoc_rsp,
 			       t_u8 wait_option);
-mlan_status woal_get_assoc_req(moal_private *priv,
-			       mlan_ds_misc_assoc_req * assoc_req,
-			       t_u8 wait_option);
-
 /** Get signal information */
 mlan_status woal_get_signal_info(moal_private *priv, t_u8 wait_option,
 				 mlan_ds_get_signal *signal);
 /** Get mode */
 t_u32 woal_get_mode(moal_private *priv, t_u8 wait_option);
 mlan_status woal_get_sta_channel(moal_private *priv, t_u8 wait_option,
-				 chan_band_info * channel);
+				 chan_band_info *channel);
 #ifdef STA_WEXT
 /** Get data rates */
 mlan_status woal_get_data_rates(moal_private *priv, t_u8 wait_option,
@@ -3157,6 +3157,10 @@ mlan_status woal_get_wpa_enable(moal_private *priv, t_u8 wait_option,
 
 mlan_status woal_set_11d(moal_private *priv, t_u8 wait_option, t_u8 enable);
 
+mlan_status woal_process_rf_test_mode(moal_handle *handle, t_u32 mode);
+mlan_status woal_process_rf_test_mode_cmd(moal_handle *handle, t_u32 cmd,
+					  const char *buffer, size_t len,
+					  t_u32 action, t_u32 val);
 #if defined(STA_SUPPORT) || defined(UAP_SUPPORT)
 /** Get statistics information */
 mlan_status woal_get_stats_info(moal_private *priv, t_u8 wait_option,
@@ -3192,6 +3196,8 @@ int woal_priv_get_nonglobal_operclass_by_bw_channel(moal_private *priv,
 int woal_send_host_packet(struct net_device *dev, struct ifreq *req);
 /** Private command ID to pass mgmt frame */
 #define WOAL_MGMT_FRAME_TX_IOCTL (SIOCDEVPRIVATE + 12)
+/** common ioctl for TDLS */
+int woal_tdls_config_ioctl(struct net_device *dev, struct ifreq *req);
 
 int woal_get_bss_type(struct net_device *dev, struct ifreq *req);
 #if defined(STA_WEXT) || defined(UAP_WEXT)
@@ -3207,16 +3213,20 @@ void woal_go_timer_func(void *context);
 int woal_set_get_bss_role(moal_private *priv, struct iwreq *wrq);
 #endif
 #endif
+#if defined(WIFI_DIRECT_SUPPORT) || defined(UAP_SUPPORT)
 /** hostcmd ioctl for uap, wifidirect */
 int woal_hostcmd_ioctl(struct net_device *dev, struct ifreq *req);
+#endif
 
 mlan_status woal_set_remain_channel_ioctl(moal_private *priv, t_u8 wait_option,
 					  pmlan_ds_remain_chan pchan);
 void woal_remain_timer_func(void *context);
+#ifdef WIFI_DIRECT_SUPPORT
 mlan_status woal_wifi_direct_mode_cfg(moal_private *priv, t_u16 action,
 				      t_u16 *mode);
 mlan_status woal_p2p_config(moal_private *priv, t_u32 action,
 			    mlan_ds_wifi_direct_config *p2p_config);
+#endif /* WIFI_DIRECT_SUPPORT */
 
 int woal_11h_cancel_chan_report_ioctl(moal_private *priv, t_u8 wait_option);
 
@@ -3246,6 +3256,15 @@ void woal_debug_remove(moal_private *priv);
 mlan_status woal_get_pm_info(moal_private *priv, mlan_ds_ps_info *pm_info);
 /** get mlan debug info */
 void woal_mlan_debug_info(moal_private *priv);
+
+#ifdef USB
+#ifdef CONFIG_USB_SUSPEND
+/** Enter USB Suspend */
+int woal_enter_usb_suspend(moal_handle *handle);
+/** Exit from USB Suspend */
+int woal_exit_usb_suspend(moal_handle *handle);
+#endif /* CONFIG_USB_SUSPEND */
+#endif
 
 #ifdef REASSOCIATION
 int woal_reassociation_thread(void *data);
@@ -3331,6 +3350,9 @@ void woal_clear_conn_params(moal_private *priv);
 #endif
 
 void woal_flush_tcp_sess_queue(moal_private *priv);
+#ifdef STA_CFG80211
+void woal_flush_tdls_list(moal_private *priv);
+#endif
 void wlan_scan_create_brief_table_entry(t_u8 **ppbuffer,
 					BSSDescriptor_t *pbss_desc);
 int wlan_get_scan_table_ret_entry(BSSDescriptor_t *pbss_desc, t_u8 **ppbuffer,
@@ -3344,12 +3366,6 @@ struct tx_status_info *woal_get_tx_info(moal_private *priv, t_u8 tx_seq_num);
 void woal_remove_tx_info(moal_private *priv, t_u8 tx_seq_num);
 
 mlan_status woal_request_country_power_table(moal_private *priv, char *region);
-mlan_status woal_mc_policy_cfg(moal_private *priv, t_u16 *enable,
-			       t_u8 wait_option, t_u8 action);
-#ifdef UAP_SUPPORT
-void woal_check_mc_connection(moal_private *priv, t_u8 wait_option,
-			      t_u8 new_channel);
-#endif
 #ifdef RX_PACKET_COALESCE
 mlan_status woal_rx_pkt_coalesce_cfg(moal_private *priv, t_u16 *enable,
 				     t_u8 wait_option, t_u8 action);
@@ -3363,37 +3379,48 @@ void woal_hist_do_reset(moal_private *priv, void *data);
 void woal_hist_reset_table(moal_private *priv, t_u8 antenna);
 void woal_hist_data_add(moal_private *priv, t_u16 rx_rate, t_s8 snr, t_s8 nflr,
 			t_u8 antenna);
+mlan_status woal_set_hotspotcfg(moal_private *priv, t_u8 wait_option,
+				t_u32 hotspotcfg);
 
-#if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
-mlan_status woal_set_net_monitor(moal_private *priv, t_u8 wait_option,
-				 t_u8 enable, t_u8 filter,
-				 netmon_band_chan_cfg * band_chan_cfg);
-#endif
+mlan_status woal_set_get_wowlan_config(moal_private *priv, t_u16 action,
+				       t_u8 wait_option,
+				       mlan_ds_misc_mef_flt_cfg *mefcfg);
+mlan_status woal_set_auto_arp_ext(moal_handle *handle, t_u8 enable);
 mlan_status woal_delba_all(moal_private *priv, t_u8 wait_option);
-void woal_channel_info_to_bandcfg(moal_private *priv,
-				  wifi_channel_info * ch_info,
-				  Band_Config_t *bandcfg);
-void woal_bandcfg_to_channel_info(moal_private *priv, Band_Config_t *bandcfg,
-				  t_u8 channel, wifi_channel_info * ch_info);
-mlan_status woal_config_rtt(moal_private *priv, t_u8 wait_option,
-			    wifi_rtt_config_params_t * rtt_params);
-mlan_status woal_cancel_rtt(moal_private *priv, t_u8 wait_option,
-			    t_u32 addr_num, t_u8 addr[][MLAN_MAC_ADDR_LENGTH]);
-mlan_status woal_rtt_responder_cfg(moal_private *priv, t_u8 wait_option,
-				   mlan_rtt_responder * rtt_rsp_cfg);
+#ifdef STA_CFG80211
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
+int woal_mkeep_alive_vendor_event(moal_private *priv,
+				  pmlan_ds_misc_keep_alive mkeep_alive);
+#endif
+#endif
+int woal_start_mkeep_alive(moal_private *priv, t_u8 mkeep_alive_id,
+			   t_u8 *ip_pkt, t_u16 ip_pkt_len, t_u8 *src_mac,
+			   t_u8 *dst_mac, t_u32 period_msec,
+			   t_u32 retry_interval, t_u8 retry_cnt);
+int woal_stop_mkeep_alive(moal_private *priv, t_u8 mkeep_alive_id, t_u8 reset,
+			  t_u8 *ip_pkt, t_u8 *pkt_len);
+int woal_priv_save_cloud_keep_alive_params(
+	moal_private *priv, t_u8 mkeep_alive_id, t_u8 enable, t_u16 ether_type,
+	t_u8 *ip_pkt, t_u16 ip_pkt_len, t_u8 *src_mac, t_u8 *dst_mac,
+	t_u32 period_msec, t_u32 retry_interval, t_u8 retry_cnt);
 #ifdef UAP_SUPPORT
 mlan_status woal_set_wacp_mode(moal_private *priv, t_u8 wait_option);
 #endif
-
-#if defined(STA_CFG80211) && defined(UAP_CFG80211)
-monitor_iface *woal_prepare_mon_if(moal_private *priv, const char *name,
-				   unsigned char name_assign_type,
-				   int sniffer_mode);
-#endif
+mlan_status woal_init_aggr_ctrl(moal_handle *handle, t_u8 wait_option);
 
 #if defined(STA_CFG80211) || defined(UAP_CFG80211)
 void woal_cfg80211_vendor_event_fw_dump(moal_private *priv);
 #endif
+
+#ifdef STA_CFG80211
+#if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 1, 0)
+mlan_status woal_set_rekey_data(moal_private *priv,
+				mlan_ds_misc_gtk_rekey_data *gtk_rekey,
+				t_u8 action, t_u8 wait_option);
+#endif
+#endif
+
+mlan_status woal_vdll_req_fw(moal_handle *handle);
 
 void woal_ioctl_get_misc_conf(moal_private *priv, mlan_ds_misc_cfg *info);
 t_u8 woal_get_second_channel_offset(moal_private *priv, int chan);

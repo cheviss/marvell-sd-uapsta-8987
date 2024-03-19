@@ -24,7 +24,6 @@
 #define _MOAL_CFGVENDOR_H_
 
 #include "moal_main.h"
-#include "linux/kfifo.h"
 
 #if KERNEL_VERSION(3, 14, 0) <= CFG80211_VERSION_CODE
 #define RING_NAME_MAX 32
@@ -90,27 +89,27 @@ typedef struct _wifi_ring_buffer {
 
 #define TLV_LOG_HEADER_LEN 4
 
-#define WIFI_LOGGER_MEMORY_DUMP_SUPPORTED MBIT(0)	/* Memory dump of Fw */
-#define WIFI_LOGGER_PER_PACKET_TX_RX_STATUS_SUPPORT MBIT(1)	/*PKT status */
-#define WIFI_LOGGER_CONNECT_EVENT_SUPPORTED MBIT(2)	/* connectivity event */
-#define WIFI_LOGGER_POWER_EVENT_SUPPORTED MBIT(3)	/* Power of driver */
-#define WIFI_LOGGER_WAKE_LOCK_SUPPORTED MBIT(4)	/* Wake lock of driver */
-#define WIFI_LOGGER_VERBOSE_SUPPORTED MBIT(5)	/*verbose log of Fw */
+#define WIFI_LOGGER_MEMORY_DUMP_SUPPORTED MBIT(0) /* Memory dump of Fw*/
+#define WIFI_LOGGER_PER_PACKET_TX_RX_STATUS_SUPPORT MBIT(1) /*PKT status*/
+#define WIFI_LOGGER_CONNECT_EVENT_SUPPORTED MBIT(2) /* connectivity event*/
+#define WIFI_LOGGER_POWER_EVENT_SUPPORTED MBIT(3) /* Power of driver*/
+#define WIFI_LOGGER_WAKE_LOCK_SUPPORTED MBIT(4) /* Wake lock of driver*/
+#define WIFI_LOGGER_VERBOSE_SUPPORTED MBIT(5) /*verbose log of Fw*/
 #define WIFI_LOGGER_WATCHDOG_TIMER_SUPPORTED                                   \
-	MBIT(6)			/*monitor the health of Fw */
+	MBIT(6) /*monitor the health of Fw*/
 
 /**
  * Parameters of wifi logger events are TLVs
  * Event parameters tags are defined as:
  */
-#define WIFI_TAG_VENDOR_SPECIFIC 0	// take a byte stream as parameter
-#define WIFI_TAG_BSSID 1	// takes a 6 bytes MAC address as parameter
-#define WIFI_TAG_ADDR 2		// takes a 6 bytes MAC address as parameter
-#define WIFI_TAG_SSID 3		// takes a 32 bytes SSID address as parameter
-#define WIFI_TAG_STATUS 4	// takes an integer as parameter
-#define WIFI_TAG_REASON_CODE 14	// take a reason code as per 802.11 as parameter
-#define WIFI_TAG_RSSI 21	// take an integer as parameter
-#define WIFI_TAG_CHANNEL 22	// take an integer as parameter
+#define WIFI_TAG_VENDOR_SPECIFIC 0 // take a byte stream as parameter
+#define WIFI_TAG_BSSID 1 // takes a 6 bytes MAC address as parameter
+#define WIFI_TAG_ADDR 2 // takes a 6 bytes MAC address as parameter
+#define WIFI_TAG_SSID 3 // takes a 32 bytes SSID address as parameter
+#define WIFI_TAG_STATUS 4 // takes an integer as parameter
+#define WIFI_TAG_REASON_CODE 14 // take a reason code as per 802.11 as parameter
+#define WIFI_TAG_RSSI 21 // take an integer as parameter
+#define WIFI_TAG_CHANNEL 22 // take an integer as parameter
 
 #define RING_ENTRY_SIZE (sizeof(wifi_ring_buffer_entry))
 #define ENTRY_LENGTH(hdr) (hdr->entry_size + RING_ENTRY_SIZE)
@@ -144,10 +143,9 @@ enum logger_attributes {
 
 /* Below events refer to the wifi_connectivity_event ring and shall be supported
  */
-enum {
-	WIFI_EVENT_ASSOCIATION_REQUESTED = 0,
-	WIFI_EVENT_AUTH_COMPLETE,
-	WIFI_EVENT_ASSOC_COMPLETE,
+enum { WIFI_EVENT_ASSOCIATION_REQUESTED = 0,
+       WIFI_EVENT_AUTH_COMPLETE,
+       WIFI_EVENT_ASSOC_COMPLETE,
 };
 
 enum {
@@ -157,13 +155,11 @@ enum {
 	RING_BUFFER_ENTRY_FLAGS_HAS_TIMESTAMP = (1 << (1))
 };
 
-enum {
-	ENTRY_TYPE_CONNECT_EVENT = 1,
-	ENTRY_TYPE_PKT,
-	ENTRY_TYPE_WAKE_LOCK,
-	ENTRY_TYPE_POWER_EVENT,
-	ENTRY_TYPE_DATA
-};
+enum { ENTRY_TYPE_CONNECT_EVENT = 1,
+       ENTRY_TYPE_PKT,
+       ENTRY_TYPE_WAKE_LOCK,
+       ENTRY_TYPE_POWER_EVENT,
+       ENTRY_TYPE_DATA };
 
 /** WiFi ring buffer entry structure */
 typedef struct {
@@ -175,7 +171,7 @@ typedef struct {
 	t_u8 type;
 	/** present if has_timestamp bit is set. */
 	t_u64 timestamp;
-} __attribute__ ((packed)) wifi_ring_buffer_entry;
+} __attribute__((packed)) wifi_ring_buffer_entry;
 
 /** WiFi ring buffer status structure*/
 typedef struct _wifi_ring_buffer_status {
@@ -205,7 +201,7 @@ typedef struct {
 	u16 length;
 	/** Value */
 	u8 value[];
-} __attribute__ ((packed)) tlv_log;
+} __attribute__((packed)) tlv_log;
 
 /** WiFi ring buffer driver structure */
 typedef struct {
@@ -219,7 +215,7 @@ typedef struct {
 	 * found etc... as well, event_data can include a vendor proprietary
 	 * part which is understood by the developer only
 	 */
-} __attribute__ ((packed)) wifi_ring_buffer_driver_connectivity_event;
+} __attribute__((packed)) wifi_ring_buffer_driver_connectivity_event;
 
 /** Assoc logger data structure */
 typedef struct _assoc_logger {
@@ -490,10 +486,9 @@ int woal_packet_fate_monitor(moal_private *priv,
 #define APF_FRAME_HEADER_SIZE 14
 #define PACKET_FILTER_MAX_LEN 1024
 
-enum {
-	PACKET_FILTER_STATE_INIT = 0,
-	PACKET_FILTER_STATE_STOP,
-	PACKET_FILTER_STATE_START,
+enum { PACKET_FILTER_STATE_INIT = 0,
+       PACKET_FILTER_STATE_STOP,
+       PACKET_FILTER_STATE_START,
 };
 
 enum wifi_attr_packet_filter {
@@ -519,56 +514,6 @@ typedef struct _packet_filter {
 int woal_filter_packet(moal_private *priv, t_u8 *data, t_u32 len,
 		       t_u32 filter_age);
 
-#define CMD_FIFO_SIZE 8
-#define MAX_INDICATE_ARRAY_SIZE 5
-
-enum {
-	ATTR_NAN_FAKE = 1,
-	ATTR_NAN_IND = 2,
-	ATTR_NAN_AFTER_LAST,
-	ATTR_NAN_MAX = ATTR_NAN_AFTER_LAST - 1
-};
-
-/** nan_cb */
-typedef struct _nan_cb {
-	/** Delayed work response */
-	struct delayed_work response_work;
-	/** Priv */
-	moal_private *priv;
-	/** CMD fifo */
-	struct kfifo cmd_fifo;
-} nan_cb;
-
-/** NanHeader */
-typedef struct _NanHeader {
-	/** Msg ID */
-	t_u16 MsgId;
-	/** Msg length */
-	t_u16 MsgLen;
-	/** Handle */
-	t_u16 handle;
-	/** Transaction ID */
-	t_u16 transactionId;
-} NanHeader;
-
-/** NanHeader_Ext */
-typedef struct _NanHeader_Ext {
-	NanHeader nan_header;
-	/** Status */
-	t_u16 status;
-	/** Value */
-	t_u16 value;
-} NanHeader_Ext;
-
-/** nan_cmd */
-typedef struct _nan_cmd {
-	NanHeader_Ext nan_header_ext;
-	/** Enable Indication */
-	t_u16 indicate_enable;
-	/** Type Indicate */
-	t_u16 indicate_type;
-} nan_cmd;
-
 int woal_init_wifi_hal(moal_private *priv);
 int woal_deinit_wifi_hal(moal_private *priv);
 
@@ -581,35 +526,35 @@ int woal_deinit_wifi_hal(moal_private *priv);
 	(VENDOR_ID_OVERHEAD + VENDOR_SUBCMD_OVERHEAD + VENDOR_DATA_OVERHEAD)
 
 /* Features Enums*/
-#define WLAN_FEATURE_INFRA 0x0001	// Basic infrastructure mode support
-#define WLAN_FEATURE_INFRA_5G 0x0002	// 5 GHz Band support
-#define WLAN_FEATURE_HOTSPOT 0x0004	// GAS/ANQP support
-#define WLAN_FEATURE_P2P 0x0008	// Wifi-Direct/P2P
-#define WLAN_FEATURE_SOFT_AP 0x0010	// Soft AP support
-#define WLAN_FEATURE_GSCAN 0x0020	// Google-Scan APIsi support
-#define WLAN_FEATURE_NAN 0x0040	// Neighbor Awareness Networking (NAN)
-#define WLAN_FEATURE_D2D_RTT 0x0080	// Device-to-device RTT support
-#define WLAN_FEATURE_D2AP_RTT 0x0100	// Device-to-AP RTT support
-#define WLAN_FEATURE_BATCH_SCAN 0x0200	// Batched Scan (legacy) support
-#define WLAN_FEATURE_PNO 0x0400	// Preferred network offload support
-#define WLAN_FEATURE_ADDITIONAL_STA 0x0800	// Two STAs support
-#define WLAN_FEATURE_TDLS 0x1000	// Tunnel directed link setup (TDLS)
-#define WLAN_FEATURE_TDLS_OFFCHANNEL 0x2000	// TDLS off channel support
-#define WLAN_FEATURE_EPR 0x4000	// Enhanced power reporting support
-#define WLAN_FEATURE_AP_STA 0x8000	// AP STA Concurrency support
+#define WLAN_FEATURE_INFRA 0x0001 // Basic infrastructure mode support
+#define WLAN_FEATURE_INFRA_5G 0x0002 // 5 GHz Band support
+#define WLAN_FEATURE_HOTSPOT 0x0004 // GAS/ANQP support
+#define WLAN_FEATURE_P2P 0x0008 // Wifi-Direct/P2P
+#define WLAN_FEATURE_SOFT_AP 0x0010 // Soft AP support
+#define WLAN_FEATURE_GSCAN 0x0020 // Google-Scan APIsi support
+#define WLAN_FEATURE_NAN 0x0040 // Neighbor Awareness Networking (NAN)
+#define WLAN_FEATURE_D2D_RTT 0x0080 // Device-to-device RTT support
+#define WLAN_FEATURE_D2AP_RTT 0x0100 // Device-to-AP RTT support
+#define WLAN_FEATURE_BATCH_SCAN 0x0200 // Batched Scan (legacy) support
+#define WLAN_FEATURE_PNO 0x0400 // Preferred network offload support
+#define WLAN_FEATURE_ADDITIONAL_STA 0x0800 // Two STAs support
+#define WLAN_FEATURE_TDLS 0x1000 // Tunnel directed link setup (TDLS)
+#define WLAN_FEATURE_TDLS_OFFCHANNEL 0x2000 // TDLS off channel support
+#define WLAN_FEATURE_EPR 0x4000 // Enhanced power reporting support
+#define WLAN_FEATURE_AP_STA 0x8000 // AP STA Concurrency support
 #define WLAN_FEATURE_LINK_LAYER_STATS                                          \
-	0x10000			// Link layer stats collection support
-#define WLAN_FEATURE_LOGGER 0x20000	// WiFi Logger support
-#define WLAN_FEATURE_HAL_EPNO 0x40000	// WiFi enhanced PNO support
-#define WLAN_FEATURE_RSSI_MONITOR 0x80000	// RSSI Monitor support
-#define WLAN_FEATURE_MKEEP_ALIVE 0x100000	// WiFi mkeep_alive support
-#define WLAN_FEATURE_CONFIG_NDO 0x200000	// ND offload configure support
+	0x10000 // Link layer stats collection support
+#define WLAN_FEATURE_LOGGER 0x20000 // WiFi Logger support
+#define WLAN_FEATURE_HAL_EPNO 0x40000 // WiFi enhanced PNO support
+#define WLAN_FEATURE_RSSI_MONITOR 0x80000 // RSSI Monitor support
+#define WLAN_FEATURE_MKEEP_ALIVE 0x100000 // WiFi mkeep_alive support
+#define WLAN_FEATURE_CONFIG_NDO 0x200000 // ND offload configure support
 #define WLAN_FEATURE_TX_TRANSMIT_POWER                                         \
-	0x400000		// Capture Tx transmit power levels
-#define WLAN_FEATURE_CONTROL_ROAMING 0x800000	// Enable/Disable firmware roaming
-#define WLAN_FEATURE_IE_WHITELIST 0x1000000	// Probe IE white listing support
+	0x400000 // Capture Tx transmit power levels
+#define WLAN_FEATURE_CONTROL_ROAMING 0x800000 // Enable/Disable firmware roaming
+#define WLAN_FEATURE_IE_WHITELIST 0x1000000 // Probe IE white listing support
 #define WLAN_FEATURE_SCAN_RAND                                                 \
-	0x2000000		// MAC & Probe Sequence Number randomization Support
+	0x2000000 // MAC & Probe Sequence Number randomization Support
 // Add more features here
 
 #define MAX_CHANNEL_NUM 200
@@ -660,7 +605,7 @@ enum vendor_event {
 	event_hang = 0,
 	event_fw_dump_done = 1,
 	event_rssi_monitor = 0x1501,
-	event_rtt_result = 0x07,
+	event_cloud_keep_alive = 0x10003,
 	event_dfs_radar_detected = 0x10004,
 	event_dfs_cac_started = 0x10005,
 	event_dfs_cac_finished = 0x10006,
@@ -670,7 +615,6 @@ enum vendor_event {
 	event_wifi_logger_alert,
 	event_packet_fate_monitor,
 	event_wake_reason_report,
-	event_nan_cb = 0x10010,
 	event_max,
 };
 
@@ -723,20 +667,13 @@ void woal_cfg80211_rssi_monitor_event(moal_private *priv, t_s16 rssi);
 /**vendor sub command*/
 enum vendor_sub_command {
 	sub_cmd_set_drvdbg = 0,
+	sub_cmd_start_keep_alive = 0x0003,
+	sub_cmd_stop_keep_alive = 0x0004,
 	sub_cmd_dfs_capability = 0x0005,
-	sub_cmd_get_correlated_time = 0x0006,
 	sub_cmd_set_scan_mac_oui = 0x0007,
 	sub_cmd_set_packet_filter = 0x0011,
 	sub_cmd_get_packet_filter_capability,
 	sub_cmd_nd_offload = 0x0100,
-	SUBCMD_RTT_GET_CAPA = 0x1100,
-	SUBCMD_RTT_RANGE_REQUEST,
-	SUBCMD_RTT_RANGE_CANCEL,
-	SUBCMD_RTT_GET_RESPONDER_INFO,
-	SUBCMD_RTT_ENABLE_RESPONDER,
-	SUBCMD_RTT_DISABLE_RESPONDER,
-	SUBCMD_RTT_SET_LCI,
-	SUBCMD_RTT_SET_LCR,
 	sub_cmd_link_statistic_set = 0x1200,
 	sub_cmd_link_statistic_get = 0x1201,
 	sub_cmd_link_statistic_clr = 0x1202,
@@ -753,39 +690,16 @@ enum vendor_sub_command {
 	sub_cmd_get_drv_mem_dump = 0x1407,
 	sub_cmd_start_packet_fate_monitor = 0x1408,
 	sub_cmd_rssi_monitor = 0x1500,
-	/*Sub-command for wifi hal */
+	/*Sub-command for wifi hal*/
 	sub_cmd_get_roaming_capability = 0x1700,
 	sub_cmd_fw_roaming_enable = 0x1701,
 	sub_cmd_fw_roaming_config = 0x1702,
-	subcmd_nan_enable_req = 0x1800,
-	subcmd_nan_disable_req,
-	subcmd_nan_publish_req,
-	subcmd_nan_publish_cancel,
-	subcmd_nan_subscribe_req,
-	subcmd_nan_subscribe_cancel,
-	subcmd_nan_trasmit_followup,
-	subcmd_nan_stats_req,
-	subcmd_nan_config_req,
-	subcmd_nan_tca_req,
-	subcmd_nan_beacon_sdf_payload,
-	subcmd_nan_get_version,
-	subcmd_nan_get_capa,
-	subcmd_nan_data_if_create,
-	subcmd_nan_data_if_delete,
-	subcmd_nan_data_req_initor,
-	subcmd_nan_data_indi_resp,
-	subcmd_nan_data_end,
-	subcmd_cfr_request = 0x1900,
-	subcmd_cfr_cancel,
-	subcmd_get_csi_dump_path,
-	subcmd_get_csi_config,
-	subcmd_get_csi_capa,
 	sub_cmd_max,
 };
 
 void woal_register_cfg80211_vendor_command(struct wiphy *wiphy);
-int woal_cfg80211_vendor_event(moal_private *priv, int event,
-			       t_u8 *data, int len);
+int woal_cfg80211_vendor_event(moal_private *priv, int event, t_u8 *data,
+			       int len);
 
 enum mrvl_wlan_vendor_attr {
 	MRVL_WLAN_VENDOR_ATTR_INVALID = 0,
@@ -802,6 +716,22 @@ typedef enum {
 	ATTR_ND_OFFLOAD_AFTER_LAST,
 	ATTR_ND_OFFLOAD_MAX = ATTR_ND_OFFLOAD_AFTER_LAST - 1,
 } ND_OFFLOAD_ATTR;
+
+#define MKEEP_ALIVE_IP_PKT_MAX 256
+enum mkeep_alive_attributes {
+	MKEEP_ALIVE_ATTRIBUTE_INVALID = 0,
+	MKEEP_ALIVE_ATTRIBUTE_ID,
+	MKEEP_ALIVE_ATTRIBUTE_ETHER_TYPE,
+	MKEEP_ALIVE_ATTRIBUTE_IP_PKT,
+	MKEEP_ALIVE_ATTRIBUTE_IP_PKT_LEN,
+	MKEEP_ALIVE_ATTRIBUTE_SRC_MAC_ADDR,
+	MKEEP_ALIVE_ATTRIBUTE_DST_MAC_ADDR,
+	MKEEP_ALIVE_ATTRIBUTE_PERIOD_MSEC,
+	MKEEP_ALIVE_ATTRIBUTE_RETRY_INTERVAL,
+	MKEEP_ALIVE_ATTRIBUTE_RETRY_CNT,
+	MKEEP_ALIVE_ATTRIBUTE_AFTER_LAST,
+	MKEEP_ALIVE_ATTRIBUTE_MAX = MKEEP_ALIVE_ATTRIBUTE_AFTER_LAST - 1
+};
 
 /** WiFi roaming capabilities structure */
 typedef struct {
@@ -848,51 +778,5 @@ enum mrvl_wlan_vendor_attr_fw_roaming {
 		MRVL_WLAN_VENDOR_ATTR_FW_ROAMING_AFTER_LAST - 1
 };
 
-enum attr_rtt {
-	ATTR_RTT_INVALID = 0,
-	ATTR_RTT_CAPA,
-	ATTR_RTT_TARGET_NUM,
-	ATTR_RTT_TARGET_CONFIG,
-	ATTR_RTT_TARGET_ADDR,
-	ATTR_RTT_RESULT_COMPLETE,
-	ATTR_RTT_RESULT_NUM,
-	ATTR_RTT_RESULT_FULL,
-	ATTR_RTT_CHANNEL_INFO,
-	ATTR_RTT_MAX_DUR_SEC,
-	ATTR_RTT_PREAMBLE,
-	ATTR_RTT_LCI_INFO,
-	ATTR_RTT_LCR_INFO,
-
-	/* keep last */
-	ATTR_RTT_AFTER_LAST,
-	ATTR_RTT_MAX = ATTR_RTT_AFTER_LAST - 1
-};
-
-mlan_status woal_cfg80211_event_rtt_result(moal_private *priv, t_u8 *data,
-					   int len);
-
-enum attr_csi {
-	ATTR_CSI_INVALID = 0,
-	ATTR_CSI_CONFIG,
-	ATTR_PEER_MAC_ADDR,
-	ATTR_CSI_DUMP_PATH,
-	ATTR_CSI_CAPA,
-	ATTR_CSI_DUMP_FORMAT,
-	ATTR_CSI_AFTER_LAST,
-	ATTR_CSI_MAX = ATTR_CSI_AFTER_LAST - 1,
-};
-
-/** CSI capability structure */
-typedef struct {
-	/**Bit mask indicates what BW is supported */
-	t_u8 bw_support;
-	/** Bit mask indicates what capturing method is supported */
-	t_u8 method_support;
-	/** Max number of capture peers supported */
-	t_u8 max_peer;
-} wifi_csi_capabilities;
-
-mlan_status woal_cfg80211_event_csi_dump(moal_private *priv, t_u8 *data,
-					 int len);
 #endif
 #endif /* _MOAL_CFGVENDOR_H_ */

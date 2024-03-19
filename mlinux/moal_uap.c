@@ -28,7 +28,9 @@ Change log:
 
 #include "moal_main.h"
 #include "moal_uap.h"
+#ifdef SDIO
 #include "moal_sdio.h"
+#endif /* SDIO */
 #include "moal_eth_ioctl.h"
 #if defined(STA_CFG80211) && defined(UAP_CFG80211)
 #include "moal_cfg80211.h"
@@ -51,8 +53,7 @@ Change log:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_addba_param(struct net_device *dev, struct ifreq *req)
+static int woal_uap_addba_param(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -131,8 +132,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_aggr_priotbl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_aggr_priotbl(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -207,8 +207,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_addba_reject(struct net_device *dev, struct ifreq *req)
+static int woal_uap_addba_reject(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -279,8 +278,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_get_fw_info(struct net_device *dev, struct ifreq *req)
+static int woal_uap_get_fw_info(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	uap_fw_info fw;
@@ -330,8 +328,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_deep_sleep(struct net_device *dev, struct ifreq *req)
+static int woal_uap_deep_sleep(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -408,8 +405,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_band_steer(struct net_device *dev, struct ifreq *req)
+static int woal_uap_band_steer(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -480,8 +476,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_beacon_stuck(struct net_device *dev, struct ifreq *req)
+static int woal_uap_beacon_stuck(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -510,9 +505,8 @@ woal_uap_beacon_stuck(struct net_device *dev, struct ifreq *req)
 	DBG_HEXDUMP(MCMD_D, "beacon_stuck_detect_para", (t_u8 *)&param,
 		    sizeof(param));
 
-	ioctl_req =
-		woal_alloc_mlan_ioctl_req(sizeof
-					  (mlan_ds_beacon_stuck_param_cfg));
+	ioctl_req = woal_alloc_mlan_ioctl_req(
+		sizeof(mlan_ds_beacon_stuck_param_cfg));
 	if (ioctl_req == NULL) {
 		LEAVE();
 		return -ENOMEM;
@@ -564,8 +558,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_txdatapause(struct net_device *dev, struct ifreq *req)
+static int woal_uap_txdatapause(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -631,6 +624,7 @@ done:
 	return ret;
 }
 
+#ifdef SDIO
 /**
  *  @brief uap sdcmd52rw ioctl handler
  *
@@ -638,8 +632,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_sdcmd52_rw(struct net_device *dev, struct ifreq *req)
+static int woal_uap_sdcmd52_rw(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	sdcmd52_para param;
@@ -666,47 +659,73 @@ woal_uap_sdcmd52_rw(struct net_device *dev, struct ifreq *req)
 
 	if (!param.action) {
 		PRINTM(MINFO, "Cmd52 read, func=%d, reg=0x%08X\n", func, reg);
-		sdio_claim_host(((struct sdio_mmc_card *)priv->phandle->card)->
-				func);
+#ifdef SDIO_MMC
+		sdio_claim_host(
+			((struct sdio_mmc_card *)priv->phandle->card)->func);
 		if (func)
-			data = sdio_readb(((struct sdio_mmc_card *)priv->
-					   phandle->card)
-					  ->func, reg, &ret);
+			data = sdio_readb(
+				((struct sdio_mmc_card *)priv->phandle->card)
+					->func,
+				reg, &ret);
 		else
-			data = sdio_f0_readb(((struct sdio_mmc_card *)priv->
-					      phandle->card)
-					     ->func, reg, &ret);
-		sdio_release_host(((struct sdio_mmc_card *)priv->phandle->
-				   card)->func);
+			data = sdio_f0_readb(
+				((struct sdio_mmc_card *)priv->phandle->card)
+					->func,
+				reg, &ret);
+		sdio_release_host(
+			((struct sdio_mmc_card *)priv->phandle->card)->func);
 		if (ret) {
 			PRINTM(MERROR,
 			       "sdio_readb: reading register 0x%X failed\n",
 			       reg);
 			goto done;
 		}
+#else
+		if (sdio_read_ioreg(priv->phandle->card, func, reg, &data) <
+		    0) {
+			PRINTM(MERROR,
+			       "sdio_read_ioreg: reading register 0x%X failed\n",
+			       reg);
+			ret = MLAN_STATUS_FAILURE;
+			goto done;
+		}
+#endif
 		param.cmd52_params[2] = data;
 	} else {
 		data = (t_u8)param.cmd52_params[2];
 		PRINTM(MINFO, "Cmd52 write, func=%d, reg=0x%08X, data=0x%02X\n",
 		       func, reg, data);
-		sdio_claim_host(((struct sdio_mmc_card *)priv->phandle->card)->
-				func);
+#ifdef SDIO_MMC
+		sdio_claim_host(
+			((struct sdio_mmc_card *)priv->phandle->card)->func);
 		if (func)
-			sdio_writeb(((struct sdio_mmc_card *)priv->phandle->
-				     card)
-				    ->func, data, reg, &ret);
+			sdio_writeb(
+				((struct sdio_mmc_card *)priv->phandle->card)
+					->func,
+				data, reg, &ret);
 		else
-			sdio_f0_writeb(((struct sdio_mmc_card *)priv->phandle->
-					card)
-				       ->func, data, reg, &ret);
-		sdio_release_host(((struct sdio_mmc_card *)priv->phandle->
-				   card)->func);
+			sdio_f0_writeb(
+				((struct sdio_mmc_card *)priv->phandle->card)
+					->func,
+				data, reg, &ret);
+		sdio_release_host(
+			((struct sdio_mmc_card *)priv->phandle->card)->func);
 		if (ret) {
 			PRINTM(MERROR,
 			       "sdio_writeb: writing register 0x%X failed\n",
 			       reg);
 			goto done;
 		}
+#else
+		if (sdio_write_ioreg(priv->phandle->card, func, reg, data) <
+		    0) {
+			PRINTM(MERROR,
+			       "sdio_write_ioreg: writing register 0x%X failed\n",
+			       reg);
+			ret = MLAN_STATUS_FAILURE;
+			goto done;
+		}
+#endif
 	}
 	/* Copy to user */
 	if (copy_to_user(req->ifr_data, &param, sizeof(param))) {
@@ -717,6 +736,7 @@ done:
 	LEAVE();
 	return ret;
 }
+#endif
 
 /**
  *  @brief configure snmp mib
@@ -725,8 +745,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_snmp_mib(struct net_device *dev, struct ifreq *req)
+static int woal_uap_snmp_mib(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -806,7 +825,7 @@ woal_uap_snmp_mib(struct net_device *dev, struct ifreq *req)
 		ret = -EFAULT;
 		goto done;
 	}
-	if (!param.action) {	/* GET */
+	if (!param.action) { /* GET */
 		if (copy_to_user(req->ifr_data + sizeof(param),
 				 &snmp->param.oid_value,
 				 MIN(param.oid_val_len, sizeof(t_u32)))) {
@@ -830,8 +849,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_domain_info(struct net_device *dev, struct ifreq *req)
+static int woal_uap_domain_info(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -916,7 +934,7 @@ woal_uap_domain_info(struct net_device *dev, struct ifreq *req)
 		ret = -EFAULT;
 		goto done;
 	}
-	if (!param.action) {	/* GET */
+	if (!param.action) { /* GET */
 		tlv_data_len = ((t_u16 *)(cfg11d->param.domain_tlv))[1];
 		if (copy_to_user(req->ifr_data + sizeof(param),
 				 &cfg11d->param.domain_tlv,
@@ -934,7 +952,6 @@ done:
 	return ret;
 }
 
-#if defined(DFS_TESTING_SUPPORT)
 /**
  *  @brief configure dfs testing settings
  *
@@ -942,8 +959,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_dfs_testing(struct net_device *dev, struct ifreq *req)
+static int woal_uap_dfs_testing(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -1005,7 +1021,7 @@ woal_uap_dfs_testing(struct net_device *dev, struct ifreq *req)
 		goto done;
 	}
 
-	if (!param.action) {	/* GET */
+	if (!param.action) { /* GET */
 		param.usr_cac_period =
 			cfg11h->param.dfs_testing.usr_cac_period_msec / 1000;
 		param.usr_nop_period =
@@ -1040,9 +1056,8 @@ done:
  *  @param data             BSS control type
  *  @return                 0 --success, otherwise fail
  */
-int
-woal_uap_get_channel_nop_info(moal_private *priv, t_u8 wait_option,
-			      mlan_ds_11h_chan_nop_info * ch_info)
+int woal_uap_get_channel_nop_info(moal_private *priv, t_u8 wait_option,
+				  mlan_ds_11h_chan_nop_info *ch_info)
 {
 	mlan_ioctl_req *req = NULL;
 	mlan_ds_11h_cfg *ds_11hcfg = NULL;
@@ -1088,7 +1103,6 @@ done:
 }
 #endif
 #endif
-#endif
 
 /**
  *  @brief configure channel switch count
@@ -1097,8 +1111,8 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_chan_switch_count_cfg(struct net_device *dev, struct ifreq *req)
+static int woal_uap_chan_switch_count_cfg(struct net_device *dev,
+					  struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -1148,7 +1162,7 @@ woal_uap_chan_switch_count_cfg(struct net_device *dev, struct ifreq *req)
 		goto done;
 	}
 
-	if (!param.action) {	/* GET */
+	if (!param.action) { /* GET */
 		param.cs_count = cfg11h->param.cs_count;
 	}
 	/* Copy to user */
@@ -1172,8 +1186,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_tx_bf_cfg(struct net_device *dev, struct ifreq *req)
+static int woal_uap_tx_bf_cfg(struct net_device *dev, struct ifreq *req)
 {
 	int ret = 0;
 	moal_private *priv = (moal_private *)netdev_priv(dev);
@@ -1237,8 +1250,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_ht_tx_cfg(struct net_device *dev, struct ifreq *req)
+static int woal_uap_ht_tx_cfg(struct net_device *dev, struct ifreq *req)
 {
 	int ret = 0;
 	moal_private *priv = (moal_private *)netdev_priv(dev);
@@ -1319,8 +1331,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_vht_cfg(struct net_device *dev, struct ifreq *req)
+static int woal_uap_vht_cfg(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	int ret = 0, resbuf_len = 0;
@@ -1337,7 +1348,7 @@ woal_uap_vht_cfg(struct net_device *dev, struct ifreq *req)
 
 	memset(&param, 0, sizeof(vht_cfg_para_hdr));
 
-	flag = (in_atomic() || irqs_disabled())? GFP_ATOMIC : GFP_KERNEL;
+	flag = (in_atomic() || irqs_disabled()) ? GFP_ATOMIC : GFP_KERNEL;
 	respbuf = kzalloc(CMD_RESPBUF_LEN, flag);
 	if (!respbuf) {
 		ret = -ENOMEM;
@@ -1468,9 +1479,8 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_hs_cfg(struct net_device *dev, struct ifreq *req,
-		BOOLEAN invoke_hostcmd)
+static int woal_uap_hs_cfg(struct net_device *dev, struct ifreq *req,
+			   BOOLEAN invoke_hostcmd)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ds_hs_cfg hscfg;
@@ -1549,7 +1559,7 @@ woal_uap_hs_cfg(struct net_device *dev, struct ifreq *req,
 	}
 	if (!(hs_cfg.flags & HS_CFG_FLAG_SET)) {
 		hs_cfg.flags = HS_CFG_FLAG_CONDITION | HS_CFG_FLAG_GPIO |
-			HS_CFG_FLAG_GAP;
+			       HS_CFG_FLAG_GAP;
 		hs_cfg.conditions = hscfg.conditions;
 		hs_cfg.gpio = hscfg.gpio;
 		hs_cfg.gap = hscfg.gap;
@@ -1574,8 +1584,7 @@ done:
  *
  *  @return             0 --success, otherwise fail
  */
-static int
-woal_uap_hs_set_para(struct net_device *dev, struct ifreq *req)
+static int woal_uap_hs_set_para(struct net_device *dev, struct ifreq *req)
 {
 	int ret = 0;
 
@@ -1601,8 +1610,8 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_mgmt_frame_control(struct net_device *dev, struct ifreq *req)
+static int woal_uap_mgmt_frame_control(struct net_device *dev,
+				       struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	int ret = 0;
@@ -1671,8 +1680,7 @@ done:
  *
  * @return           0 --success, otherwise fail
  */
-static int
-woal_uap_tx_rate_cfg(struct net_device *dev, struct ifreq *req)
+static int woal_uap_tx_rate_cfg(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	int ret = 0, i = 0;
@@ -1730,8 +1738,8 @@ woal_uap_tx_rate_cfg(struct net_device *dev, struct ifreq *req)
 				goto done;
 			}
 			/* rate_format sanity check */
-			if ((tx_rate_config.rate_format > MLAN_RATE_FORMAT_VHT)
-				) {
+			if ((tx_rate_config.rate_format >
+			     MLAN_RATE_FORMAT_HE)) {
 				PRINTM(MERROR, "Invalid format selection\n");
 				ret = -EINVAL;
 				goto done;
@@ -1748,13 +1756,15 @@ woal_uap_tx_rate_cfg(struct net_device *dev, struct ifreq *req)
 				    ((tx_rate_config.rate_format ==
 				      MLAN_RATE_FORMAT_HT) &&
 				     (tx_rate_config.rate != 32) &&
-				     (tx_rate_config.rate > 7)
-				    )
-				    || ((tx_rate_config.rate_format ==
-					 MLAN_RATE_FORMAT_VHT) &&
-					(tx_rate_config.rate >
-					 MLAN_RATE_INDEX_MCS9))
-					) {
+				     (tx_rate_config.rate > 15)) ||
+				    ((tx_rate_config.rate_format ==
+				      MLAN_RATE_FORMAT_VHT) &&
+				     (tx_rate_config.rate >
+				      MLAN_RATE_INDEX_MCS9)) ||
+				    ((tx_rate_config.rate_format ==
+				      MLAN_RATE_FORMAT_HE) &&
+				     (tx_rate_config.rate >
+				      MLAN_RATE_INDEX_MCS11))) {
 					PRINTM(MERROR,
 					       "Invalid rate selection\n");
 					ret = -EINVAL;
@@ -1800,7 +1810,9 @@ woal_uap_tx_rate_cfg(struct net_device *dev, struct ifreq *req)
 				rate->param.rate_cfg.rate_format;
 			tx_rate_config.rate = rate->param.rate_cfg.rate;
 			if (rate->param.rate_cfg.rate_format ==
-			    MLAN_RATE_FORMAT_VHT)
+				    MLAN_RATE_FORMAT_VHT ||
+			    rate->param.rate_cfg.rate_format ==
+				    MLAN_RATE_FORMAT_HE)
 				tx_rate_config.nss = rate->param.rate_cfg.nss;
 			tx_rate_config.rate_setting =
 				rate->param.rate_cfg.rate_setting;
@@ -1824,6 +1836,162 @@ done:
 }
 
 /**
+ * @brief Set/Get RF antenna mode
+ *
+ *  @param dev      A pointer to net_device structure
+ *  @param req      A pointer to ifreq structure
+ *
+ * @return           0 --success, otherwise fail
+ */
+static int woal_uap_antenna_cfg(struct net_device *dev, struct ifreq *req)
+{
+	moal_private *priv = (moal_private *)netdev_priv(dev);
+	int ret = 0;
+	mlan_ds_radio_cfg *radio = NULL;
+	mlan_ioctl_req *mreq = NULL;
+	ant_cfg_t antenna_config;
+	mlan_status status = MLAN_STATUS_SUCCESS;
+
+	ENTER();
+
+	/* Sanity check */
+	if (req->ifr_data == NULL) {
+		PRINTM(MERROR, "uap_antenna_cfg() corrupt data\n");
+		ret = -EFAULT;
+		goto done;
+	}
+
+	memset(&antenna_config, 0, sizeof(ant_cfg_t));
+	/* Get user data */
+	if (copy_from_user(&antenna_config, req->ifr_data, sizeof(ant_cfg_t))) {
+		PRINTM(MERROR, "Copy from user failed\n");
+		ret = -EFAULT;
+		goto done;
+	}
+	mreq = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_radio_cfg));
+	if (mreq == NULL) {
+		ret = -ENOMEM;
+		goto done;
+	}
+	radio = (mlan_ds_radio_cfg *)mreq->pbuf;
+	radio->sub_command = MLAN_OID_ANT_CFG;
+	mreq->req_id = MLAN_IOCTL_RADIO_CFG;
+	if (!(antenna_config.action))
+		mreq->action = MLAN_ACT_GET;
+	else {
+		mreq->action = MLAN_ACT_SET;
+		radio->param.ant_cfg.tx_antenna = antenna_config.tx_mode;
+		radio->param.ant_cfg.rx_antenna = antenna_config.rx_mode;
+#if defined(STA_CFG80211) || defined(UAP_CFG80211)
+		if (IS_CARD9098(priv->phandle->card_type) ||
+		    IS_CARD9097(priv->phandle->card_type)) {
+			if (IS_STA_CFG80211(
+				    priv->phandle->params.cfg80211_wext))
+				woal_cfg80211_notify_antcfg(
+					priv, priv->phandle->wiphy, radio);
+		}
+#endif
+	}
+
+	status = woal_request_ioctl(priv, mreq, MOAL_IOCTL_WAIT);
+	if (status != MLAN_STATUS_SUCCESS) {
+		ret = -EFAULT;
+		goto done;
+	}
+	if (mreq->action == MLAN_ACT_GET) {
+		antenna_config.tx_mode = radio->param.ant_cfg.tx_antenna;
+		antenna_config.rx_mode = radio->param.ant_cfg.rx_antenna;
+		if (copy_to_user(req->ifr_data, &antenna_config,
+				 sizeof(ant_cfg_t))) {
+			PRINTM(MERROR, "Copy to user failed\n");
+			ret = -EFAULT;
+		}
+	}
+done:
+	if (status != MLAN_STATUS_PENDING)
+		kfree(mreq);
+	LEAVE();
+	return ret;
+}
+
+/**
+ * @brief Set/Get HT stream configurations
+ *
+ *  @param dev      A pointer to net_device structure
+ *  @param req      A pointer to ifreq structure
+ *
+ * @return           0 --success, otherwise fail
+ */
+static int woal_uap_htstream_cfg(struct net_device *dev, struct ifreq *req)
+{
+	moal_private *priv = (moal_private *)netdev_priv(dev);
+	int ret = 0;
+	mlan_ds_11n_cfg *cfg = NULL;
+	mlan_ioctl_req *ioctl_req = NULL;
+	htstream_cfg_t htstream_cfg;
+	mlan_status status = MLAN_STATUS_SUCCESS;
+
+	ENTER();
+
+	memset(&htstream_cfg, 0, sizeof(htstream_cfg_t));
+
+	/* Sanity check */
+	if (req->ifr_data == NULL) {
+		PRINTM(MERROR, "woal_uap_htstream_cfg corrupt data\n");
+		ret = -EFAULT;
+		goto done;
+	}
+	if (copy_from_user(&htstream_cfg, req->ifr_data,
+			   sizeof(htstream_cfg_t))) {
+		PRINTM(MERROR, "Copy from user failed\n");
+		ret = -EFAULT;
+		goto done;
+	}
+	ioctl_req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_11n_cfg));
+	if (ioctl_req == NULL) {
+		ret = -ENOMEM;
+		goto done;
+	}
+	cfg = (mlan_ds_11n_cfg *)ioctl_req->pbuf;
+	cfg->sub_command = MLAN_OID_11N_CFG_STREAM_CFG;
+	ioctl_req->req_id = MLAN_IOCTL_11N_CFG;
+
+	if (!htstream_cfg.action) {
+		/* Get operation */
+		ioctl_req->action = MLAN_ACT_GET;
+	} else {
+		/* Update HT stream parameter in MLAN */
+		ioctl_req->action = MLAN_ACT_SET;
+		/* Set HT Stream configuration */
+		cfg->param.stream_cfg = htstream_cfg.stream_cfg;
+		PRINTM(MINFO, "SET: htstream_cfg:0x%x\n",
+		       cfg->param.stream_cfg);
+	}
+	status = woal_request_ioctl(priv, ioctl_req, MOAL_IOCTL_WAIT);
+	if (status != MLAN_STATUS_SUCCESS) {
+		ret = -EFAULT;
+		goto done;
+	}
+	/* Copy to user */
+	if (ioctl_req->action == MLAN_ACT_GET) {
+		PRINTM(MINFO, "GET: htstream_cfg:0x%x\n",
+		       htstream_cfg.stream_cfg);
+		htstream_cfg.stream_cfg = cfg->param.stream_cfg;
+		if (copy_to_user(req->ifr_data, &htstream_cfg,
+				 sizeof(htstream_cfg_t))) {
+			PRINTM(MERROR, "Copy to user failed!\n");
+			ret = -EFAULT;
+			goto done;
+		}
+	}
+done:
+	if (status != MLAN_STATUS_PENDING)
+		kfree(ioctl_req);
+	LEAVE();
+	return ret;
+}
+
+/**
  * @brief Get DFS_REPEATER mode
  *
  *  @param dev      A pointer to net_device structure
@@ -1831,8 +1999,117 @@ done:
  *
  * @return           0 --success, otherwise fail
  */
-static int
-woal_uap_cac_timer_status(struct net_device *dev, struct ifreq *req)
+static int woal_uap_dfs_repeater(struct net_device *dev, struct ifreq *req)
+{
+	moal_private *priv = (moal_private *)netdev_priv(dev);
+	int ret = 0;
+	dfs_repeater_mode param;
+	mlan_ds_misc_cfg *misc = NULL;
+	mlan_ioctl_req *mreq = NULL;
+	mlan_status status = MLAN_STATUS_SUCCESS;
+
+	ENTER();
+
+	/* Sanity check */
+	if (req->ifr_data == NULL) {
+		PRINTM(MERROR, "uap_antenna_cfg() corrupt data\n");
+		ret = -EFAULT;
+		goto done;
+	}
+
+	memset(&param, 0, sizeof(dfs_repeater_mode));
+	/* Get user data */
+	if (copy_from_user(&param, req->ifr_data, sizeof(dfs_repeater_mode))) {
+		PRINTM(MERROR, "Copy from user failed\n");
+		ret = -EFAULT;
+		goto done;
+	}
+	mreq = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_misc_cfg));
+	if (mreq == NULL) {
+		ret = -ENOMEM;
+		goto done;
+	}
+	misc = (mlan_ds_misc_cfg *)mreq->pbuf;
+	misc->sub_command = MLAN_OID_MISC_DFS_REAPTER_MODE;
+	mreq->req_id = MLAN_IOCTL_MISC_CFG;
+	mreq->action = MLAN_ACT_GET;
+
+	status = woal_request_ioctl(priv, mreq, MOAL_IOCTL_WAIT);
+	if (status != MLAN_STATUS_SUCCESS) {
+		ret = -EFAULT;
+		goto done;
+	}
+	param.mode = misc->param.dfs_repeater.mode;
+
+	if (copy_to_user(req->ifr_data, &param, sizeof(dfs_repeater_mode))) {
+		PRINTM(MERROR, "Copy to user failed\n");
+		ret = -EFAULT;
+	}
+done:
+	if (status != MLAN_STATUS_PENDING)
+		kfree(mreq);
+	LEAVE();
+	return ret;
+}
+
+/**
+ * @brief Set/Get skip CAC mode
+ *
+ *  @param dev      A pointer to net_device structure
+ *  @param req      A pointer to ifreq structure
+ *
+ * @return           0 --success, otherwise fail
+ */
+static int woal_uap_skip_cac(struct net_device *dev, struct ifreq *req)
+{
+	moal_private *priv = (moal_private *)netdev_priv(dev);
+	int ret = 0;
+	skip_cac_para param;
+
+	ENTER();
+
+	/* Sanity check */
+	if (req->ifr_data == NULL) {
+		PRINTM(MERROR, "skip_cac() corrupt data\n");
+		ret = -EFAULT;
+		goto done;
+	}
+
+	memset(&param, 0, sizeof(skip_cac_para));
+
+	/* Get user data */
+	if (copy_from_user(&param, req->ifr_data, sizeof(skip_cac_para))) {
+		PRINTM(MERROR, "Copy from user failed\n");
+		ret = -EFAULT;
+		goto done;
+	}
+
+	/* Currently default action is get */
+	if (param.action == 0) {
+		param.skip_cac = (t_u16)priv->skip_cac;
+	} else {
+		priv->skip_cac = param.skip_cac;
+	}
+
+	if (copy_to_user(req->ifr_data, &param, sizeof(skip_cac_para))) {
+		PRINTM(MERROR, "Copy to user failed\n");
+		ret = -EFAULT;
+	}
+done:
+
+	LEAVE();
+	return ret;
+}
+
+/**
+ * @brief Get DFS_REPEATER mode
+ *
+ *  @param dev      A pointer to net_device structure
+ *  @param req      A pointer to ifreq structure
+ *
+ * @return           0 --success, otherwise fail
+ */
+static int woal_uap_cac_timer_status(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	int ret = 0;
@@ -1892,8 +2169,7 @@ done:
  *
  * @return           0 --success, otherwise fail
  */
-static int
-woal_uap_operation_ctrl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_operation_ctrl(struct net_device *dev, struct ifreq *req)
 {
 	int ret = 0;
 	moal_private *priv = (moal_private *)netdev_priv(dev);
@@ -1976,8 +2252,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_ioctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_ioctl(struct net_device *dev, struct ifreq *req)
 {
 	int ret = 0;
 	t_u32 subcmd = 0;
@@ -2014,17 +2289,17 @@ woal_uap_ioctl(struct net_device *dev, struct ifreq *req)
 	case UAP_TX_DATA_PAUSE:
 		ret = woal_uap_txdatapause(dev, req);
 		break;
+#ifdef SDIO
 	case UAP_SDCMD52_RW:
 		ret = woal_uap_sdcmd52_rw(dev, req);
 		break;
+#endif
 	case UAP_SNMP_MIB:
 		ret = woal_uap_snmp_mib(dev, req);
 		break;
-#ifdef DFS_TESTING_SUPPORT
 	case UAP_DFS_TESTING:
 		ret = woal_uap_dfs_testing(dev, req);
 		break;
-#endif
 	case UAP_CHAN_SWITCH_COUNT_CFG:
 		ret = woal_uap_chan_switch_count_cfg(dev, req);
 		break;
@@ -2052,8 +2327,20 @@ woal_uap_ioctl(struct net_device *dev, struct ifreq *req)
 	case UAP_TX_RATE_CFG:
 		ret = woal_uap_tx_rate_cfg(dev, req);
 		break;
+	case UAP_ANTENNA_CFG:
+		ret = woal_uap_antenna_cfg(dev, req);
+		break;
+	case UAP_HT_STREAM_CFG:
+		ret = woal_uap_htstream_cfg(dev, req);
+		break;
+	case UAP_DFS_REPEATER_MODE:
+		ret = woal_uap_dfs_repeater(dev, req);
+		break;
 	case UAP_CAC_TIMER_STATUS:
 		ret = woal_uap_cac_timer_status(dev, req);
+		break;
+	case UAP_SKIP_CAC:
+		ret = woal_uap_skip_cac(dev, req);
 		break;
 	case UAP_OPERATION_CTRL:
 		ret = woal_uap_operation_ctrl(dev, req);
@@ -2079,8 +2366,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_sta_deauth_ioctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_sta_deauth_ioctl(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -2146,14 +2432,13 @@ done:
  *
  * @return           0 --success, otherwise fail
  */
-static int
-woal_uap_radio_ctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_radio_ctl(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	int ret = 0;
 	mlan_ds_radio_cfg *radio = NULL;
 	mlan_ioctl_req *mreq = NULL;
-	int data[2] = { 0, 0 };
+	int data[2] = {0, 0};
 	mlan_bss_info bss_info;
 	mlan_status status = MLAN_STATUS_SUCCESS;
 
@@ -2212,8 +2497,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_bss_ctrl_ioctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_bss_ctrl_ioctl(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	int ret = 0, data = 0;
@@ -2246,8 +2530,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_report_mic_ioctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_report_mic_ioctl(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -2307,15 +2590,14 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_set_key_ioctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_set_key_ioctl(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
 	mlan_ds_sec_cfg *sec = NULL;
 	encrypt_key key;
 	int ret = 0;
-	t_u8 bcast_addr[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+	t_u8 bcast_addr[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 	mlan_status status = MLAN_STATUS_SUCCESS;
 
 	ENTER();
@@ -2350,7 +2632,7 @@ woal_uap_set_key_ioctl(struct net_device *dev, struct ifreq *req)
 
 	sec = (mlan_ds_sec_cfg *)ioctl_req->pbuf;
 	sec->sub_command = MLAN_OID_SEC_CFG_ENCRYPT_KEY,
-		ioctl_req->req_id = MLAN_IOCTL_SEC_CFG;
+	ioctl_req->req_id = MLAN_IOCTL_SEC_CFG;
 	ioctl_req->action = MLAN_ACT_SET;
 
 	moal_memcpy_ext(priv->phandle, sec->param.encrypt_key.mac_addr,
@@ -2362,7 +2644,7 @@ woal_uap_set_key_ioctl(struct net_device *dev, struct ifreq *req)
 			key.key_material, key.key_len,
 			sizeof(sec->param.encrypt_key.key_material));
 	if (0 == memcmp(sec->param.encrypt_key.mac_addr, bcast_addr, ETH_ALEN))
-		 sec->param.encrypt_key.key_flags = KEY_FLAG_GROUP_KEY;
+		sec->param.encrypt_key.key_flags = KEY_FLAG_GROUP_KEY;
 	else
 		sec->param.encrypt_key.key_flags = KEY_FLAG_SET_TX_KEY;
 
@@ -2387,9 +2669,8 @@ done:
  *
  *  @return                     MLAN_STATUS_SUCCESS -- success, otherwise fail
  */
-int
-woal_set_get_uap_power_mode(moal_private *priv, t_u32 action,
-			    mlan_ds_ps_mgmt *ps_mgmt)
+int woal_set_get_uap_power_mode(moal_private *priv, t_u32 action,
+				mlan_ds_ps_mgmt *ps_mgmt)
 {
 	mlan_ioctl_req *ioctl_req = NULL;
 	mlan_ds_pm_cfg *pm_cfg = NULL;
@@ -2435,8 +2716,7 @@ woal_set_get_uap_power_mode(moal_private *priv, t_u32 action,
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_power_mode_ioctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_power_mode_ioctl(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	mlan_ioctl_req *ioctl_req = NULL;
@@ -2539,8 +2819,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_bss_cfg_ioctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_bss_cfg_ioctl(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	int ret = 0;
@@ -2568,9 +2847,8 @@ woal_uap_bss_cfg_ioctl(struct net_device *dev, struct ifreq *req)
 	offset += sizeof(action);
 
 	/* Allocate an IOCTL request buffer */
-	ioctl_req =
-		(mlan_ioctl_req *)
-		woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_bss));
+	ioctl_req = (mlan_ioctl_req *)woal_alloc_mlan_ioctl_req(
+		sizeof(mlan_ds_bss));
 	if (ioctl_req == NULL) {
 		ret = -ENOMEM;
 		goto done;
@@ -2626,8 +2904,8 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_get_sta_list_ioctl(struct net_device *dev, struct ifreq *req)
+static int woal_uap_get_sta_list_ioctl(struct net_device *dev,
+				       struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	int ret = 0;
@@ -2645,9 +2923,8 @@ woal_uap_get_sta_list_ioctl(struct net_device *dev, struct ifreq *req)
 	}
 
 	/* Allocate an IOCTL request buffer */
-	ioctl_req =
-		(mlan_ioctl_req *)
-		woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_get_info));
+	ioctl_req = (mlan_ioctl_req *)woal_alloc_mlan_ioctl_req(
+		sizeof(mlan_ds_get_info));
 	if (ioctl_req == NULL) {
 		ret = -ENOMEM;
 		goto done;
@@ -2688,14 +2965,13 @@ done:
  *
  *  @return          0 --success, otherwise fail
  */
-static int
-woal_uap_set_wapi_key_ioctl(moal_private *priv, wapi_msg *msg)
+static int woal_uap_set_wapi_key_ioctl(moal_private *priv, wapi_msg *msg)
 {
 	mlan_ioctl_req *req = NULL;
 	mlan_ds_sec_cfg *sec = NULL;
 	int ret = 0;
 	wapi_key_msg *key_msg = NULL;
-	t_u8 bcast_addr[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+	t_u8 bcast_addr[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 	mlan_status status = MLAN_STATUS_SUCCESS;
 
 	ENTER();
@@ -2748,8 +3024,7 @@ done:
  *  @return              MLAN_STATUS_SUCCESS/MLAN_STATUS_PENDING -- success,
  * otherwise fail
  */
-static mlan_status
-woal_enable_wapi(moal_private *priv, t_u8 enable)
+static mlan_status woal_enable_wapi(moal_private *priv, t_u8 enable)
 {
 	mlan_ioctl_req *req = NULL;
 	mlan_ds_bss *bss = NULL;
@@ -2812,17 +3087,14 @@ done:
  *
  *  @return          0 --success, otherwise fail
  */
-static int
-woal_uap_set_wapi_flag_ioctl(moal_private *priv, wapi_msg *msg)
+static int woal_uap_set_wapi_flag_ioctl(moal_private *priv, wapi_msg *msg)
 {
-	t_u8 wapi_psk_ie[] = { 0x44, 0x14, 0x01, 0x00, 0x01, 0x00, 0x00, 0x14,
-		0x72, 0x02, 0x01, 0x00, 0x00, 0x14, 0x72, 0x01,
-		0x00, 0x14, 0x72, 0x01, 0x00, 0x00
-	};
-	t_u8 wapi_cert_ie[] = { 0x44, 0x14, 0x01, 0x00, 0x01, 0x00, 0x00, 0x14,
-		0x72, 0x01, 0x01, 0x00, 0x00, 0x14, 0x72, 0x01,
-		0x00, 0x14, 0x72, 0x01, 0x00, 0x00
-	};
+	t_u8 wapi_psk_ie[] = {0x44, 0x14, 0x01, 0x00, 0x01, 0x00, 0x00, 0x14,
+			      0x72, 0x02, 0x01, 0x00, 0x00, 0x14, 0x72, 0x01,
+			      0x00, 0x14, 0x72, 0x01, 0x00, 0x00};
+	t_u8 wapi_cert_ie[] = {0x44, 0x14, 0x01, 0x00, 0x01, 0x00, 0x00, 0x14,
+			       0x72, 0x01, 0x01, 0x00, 0x00, 0x14, 0x72, 0x01,
+			       0x00, 0x14, 0x72, 0x01, 0x00, 0x00};
 	mlan_ds_misc_cfg *misc = NULL;
 	mlan_ioctl_req *req = NULL;
 	int ret = 0;
@@ -2883,8 +3155,7 @@ done:
  *  @param req      A pointer to ifreq structure
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_set_wapi(struct net_device *dev, struct ifreq *req)
+static int woal_uap_set_wapi(struct net_device *dev, struct ifreq *req)
 {
 	moal_private *priv = (moal_private *)netdev_priv(dev);
 	wapi_msg msg;
@@ -2941,9 +3212,9 @@ done:
  *
  *  @return         MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
  */
-static mlan_status
-woal_uap_get_bss_param(moal_private *priv,
-		       mlan_uap_bss_param *sys_cfg, t_u8 wait_option)
+static mlan_status woal_uap_get_bss_param(moal_private *priv,
+					  mlan_uap_bss_param *sys_cfg,
+					  t_u8 wait_option)
 {
 	mlan_ds_bss *info = NULL;
 	mlan_ioctl_req *req = NULL;
@@ -2987,9 +3258,8 @@ done:
  *
  *  @return         0 --success, otherwise fail
  */
-int
-woal_set_uap_ht_tx_cfg(moal_private *priv, Band_Config_t bandcfg,
-		       t_u16 ht_cap, t_u8 en)
+int woal_set_uap_ht_tx_cfg(moal_private *priv, Band_Config_t bandcfg,
+			   t_u16 ht_cap, t_u8 en)
 {
 	int ret = 0;
 	mlan_ds_11n_cfg *cfg_11n = NULL;
@@ -3046,9 +3316,8 @@ done:
  *
  *  @return         MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
  */
-mlan_status
-woal_uap_set_11n_status(moal_private *priv,
-			mlan_uap_bss_param *sys_cfg, t_u8 action)
+mlan_status woal_uap_set_11n_status(moal_private *priv,
+				    mlan_uap_bss_param *sys_cfg, t_u8 action)
 {
 	mlan_status status = MLAN_STATUS_SUCCESS;
 	mlan_fw_info fw_info;
@@ -3057,12 +3326,13 @@ woal_uap_set_11n_status(moal_private *priv,
 	memset(&fw_info, 0, sizeof(mlan_fw_info));
 	if (action == MLAN_ACT_DISABLE) {
 		if ((sys_cfg->supported_mcs_set[0] == 0) &&
-		    (sys_cfg->supported_mcs_set[4] == 0)
-			) {
+		    (sys_cfg->supported_mcs_set[4] == 0) &&
+		    (sys_cfg->supported_mcs_set[1] == 0)) {
 			goto done;
 		} else {
 			sys_cfg->supported_mcs_set[0] = 0;
 			sys_cfg->supported_mcs_set[4] = 0;
+			sys_cfg->supported_mcs_set[1] = 0;
 		}
 	}
 
@@ -3073,6 +3343,10 @@ woal_uap_set_11n_status(moal_private *priv,
 			sys_cfg->supported_mcs_set[4] = 0x01;
 		else
 			sys_cfg->supported_mcs_set[4] = 0x0;
+		if (fw_info.usr_dev_mcs_support == HT_STREAM_MODE_2X2)
+			sys_cfg->supported_mcs_set[1] = 0xFF;
+		else
+			sys_cfg->supported_mcs_set[1] = 0;
 	}
 
 done:
@@ -3092,9 +3366,8 @@ done:
  *
  *  @return         0--success, otherwise failure
  */
-int
-woal_uap_set_11ac_status(moal_private *priv, t_u8 action, t_u8 vht20_40,
-			 IEEEtypes_VHTCap_t *vhtcap_ie)
+int woal_uap_set_11ac_status(moal_private *priv, t_u8 action, t_u8 vht20_40,
+			     IEEEtypes_VHTCap_t *vhtcap_ie)
 {
 	mlan_ioctl_req *req = NULL;
 	mlan_ds_11ac_cfg *cfg_11ac = NULL;
@@ -3173,6 +3446,116 @@ done:
 }
 
 /**
+ *  @brief Get/Set 11ax cfg
+ *
+ *  @param priv     A pointer to moal_private structure
+ *  @param action   MLAN_ACT_SET or MLAN_ACT_GET
+ *  @param he_cfg   a pointer to mlan_ds_11ax_he_cfg
+ *
+ *  @return         0--success, otherwise failure
+ */
+int woal_11ax_cfg(moal_private *priv, t_u8 action, mlan_ds_11ax_he_cfg *he_cfg)
+{
+	int ret = 0;
+	mlan_status status = MLAN_STATUS_SUCCESS;
+	mlan_ioctl_req *req = NULL;
+	mlan_ds_11ax_cfg *cfg_11ax = NULL;
+	req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_11ax_cfg));
+	if (req == NULL) {
+		ret = -ENOMEM;
+		goto done;
+	}
+	cfg_11ax = (mlan_ds_11ax_cfg *)req->pbuf;
+	cfg_11ax->sub_command = MLAN_OID_11AX_HE_CFG;
+	req->req_id = MLAN_IOCTL_11AX_CFG;
+	req->action = action;
+	moal_memcpy_ext(priv->phandle, &cfg_11ax->param.he_cfg, he_cfg,
+			sizeof(mlan_ds_11ax_he_cfg),
+			sizeof(mlan_ds_11ax_he_cfg));
+	status = woal_request_ioctl(priv, req, MOAL_IOCTL_WAIT);
+	if (status != MLAN_STATUS_SUCCESS) {
+		ret = -EFAULT;
+		goto done;
+	}
+	moal_memcpy_ext(priv->phandle, he_cfg, &cfg_11ax->param.he_cfg,
+			sizeof(mlan_ds_11ax_he_cfg),
+			sizeof(mlan_ds_11ax_he_cfg));
+done:
+	if (status != MLAN_STATUS_PENDING)
+		kfree(req);
+	LEAVE();
+	return ret;
+}
+
+/**
+ *  @brief enable/disable 11AX
+ *
+ *  @param priv     A pointer to moal_private structure
+ *  @param action   MLAN_ACT_DISABLE or MLAN_ACT_ENABLE
+ *  @param band     band config
+ *  @param hecap_ie
+ *
+ *  @return         0--success, otherwise failure
+ */
+int woal_uap_set_11ax_status(moal_private *priv, t_u8 action, t_u8 band,
+			     IEEEtypes_HECap_t *hecap_ie)
+{
+	mlan_fw_info fw_info;
+	int ret = 0;
+	mlan_ds_11ax_he_cfg he_cfg;
+	ENTER();
+
+	memset(&fw_info, 0, sizeof(mlan_fw_info));
+	woal_request_get_fw_info(priv, MOAL_IOCTL_WAIT, &fw_info);
+	if ((band == BAND_5GHZ && !(fw_info.fw_bands & BAND_AAX)) ||
+	    (band == BAND_2GHZ && !(fw_info.fw_bands & BAND_GAX))) {
+		PRINTM(MERROR, "fw doesn't support 11ax\n");
+		ret = -EFAULT;
+		goto done;
+	}
+	memset(&he_cfg, 0, sizeof(he_cfg));
+	if (band == BAND_5GHZ)
+		he_cfg.band = MBIT(1);
+	else if (band == BAND_2GHZ)
+		he_cfg.band = MBIT(0);
+	else {
+		PRINTM(MERROR, "Invalid band!\n");
+		ret = -EFAULT;
+		goto done;
+	}
+	if (woal_11ax_cfg(priv, MLAN_ACT_GET, &he_cfg)) {
+		PRINTM(MERROR, "Fail to get 11ax cfg!\n");
+		ret = -EFAULT;
+		goto done;
+	}
+	if (hecap_ie) {
+		DBG_HEXDUMP(MCMD_D, "hecap_ie", (t_u8 *)hecap_ie,
+			    hecap_ie->ieee_hdr.len +
+				    sizeof(IEEEtypes_Header_t));
+		he_cfg.he_cap.id = hecap_ie->ieee_hdr.element_id;
+		he_cfg.he_cap.len = hecap_ie->ieee_hdr.len;
+		moal_memcpy_ext(priv->phandle, &he_cfg.he_cap.ext_id,
+				&hecap_ie->ext_id, he_cfg.he_cap.len,
+				he_cfg.he_cap.len);
+	}
+	if (action == MLAN_ACT_DISABLE) {
+		if (he_cfg.he_cap.len &&
+		    (he_cfg.he_cap.ext_id == HE_CAPABILITY)) {
+			memset(he_cfg.he_cap.he_txrx_mcs_support, 0xff,
+			       sizeof(he_cfg.he_cap.he_txrx_mcs_support));
+		} else {
+			PRINTM(MCMND, "11ax already disabled\n");
+			goto done;
+		}
+	}
+	DBG_HEXDUMP(MCMD_D, "HE_CFG ", (t_u8 *)&he_cfg, sizeof(he_cfg));
+	ret = woal_11ax_cfg(priv, MLAN_ACT_SET, &he_cfg);
+done:
+	LEAVE();
+	return ret;
+}
+
+/**
  *  @brief Parse AP configuration from ASCII string
  *
  *  @param priv       A pointer to moal_private structure
@@ -3181,9 +3564,8 @@ done:
  *
  *  @return         0 --success, otherwise fail
  */
-static int
-woal_uap_ap_cfg_parse_data(moal_private *priv, mlan_uap_bss_param *ap_cfg,
-			   char *buf)
+static int woal_uap_ap_cfg_parse_data(moal_private *priv,
+				      mlan_uap_bss_param *ap_cfg, char *buf)
 {
 	int ret = 0, atoi_ret;
 	int set_sec = 0, set_key = 0, set_chan = 0;
@@ -3280,7 +3662,8 @@ woal_uap_ap_cfg_parse_data(moal_private *priv, mlan_uap_bss_param *ap_cfg,
 				ap_cfg->wpa_cfg.pairwise_cipher_wpa =
 					CIPHER_TKIP;
 				ap_cfg->wpa_cfg.group_cipher = CIPHER_TKIP;
-			} else if (!strnicmp(value, "wep128", strlen("wep128"))) {
+			} else if (!strnicmp(value, "wep128",
+					     strlen("wep128"))) {
 				ap_cfg->auth_mode = MLAN_AUTH_MODE_OPEN;
 				if (set_key)
 					ap_cfg->wpa_cfg.length = 0;
@@ -3299,7 +3682,8 @@ woal_uap_ap_cfg_parse_data(moal_private *priv, mlan_uap_bss_param *ap_cfg,
 				PRINTM(MWARN, "Skipping KEY, found again!\n");
 				continue;
 			}
-			if (set_sec && ap_cfg->protocol == PROTOCOL_STATIC_WEP) {
+			if (set_sec &&
+			    ap_cfg->protocol == PROTOCOL_STATIC_WEP) {
 				if (strlen(value) != MAX_WEP_KEY_SIZE) {
 					PRINTM(MERROR,
 					       "Invalid WEP KEY length\n");
@@ -3309,11 +3693,10 @@ woal_uap_ap_cfg_parse_data(moal_private *priv, mlan_uap_bss_param *ap_cfg,
 				ap_cfg->wep_cfg.key0.key_index = 0;
 				ap_cfg->wep_cfg.key0.is_default = 1;
 				ap_cfg->wep_cfg.key0.length = strlen(value);
-				moal_memcpy_ext(priv->phandle,
-						ap_cfg->wep_cfg.key0.key, value,
-						strlen(value),
-						sizeof(ap_cfg->wep_cfg.key0.
-						       key));
+				moal_memcpy_ext(
+					priv->phandle, ap_cfg->wep_cfg.key0.key,
+					value, strlen(value),
+					sizeof(ap_cfg->wep_cfg.key0.key));
 				set_key = 1;
 				continue;
 			}
@@ -3349,7 +3732,8 @@ woal_uap_ap_cfg_parse_data(moal_private *priv, mlan_uap_bss_param *ap_cfg,
 			if (atoi_ret < 1 || atoi_ret > MLAN_MAX_CHANNEL) {
 				PRINTM(MERROR,
 				       "AP_CFG: Channel must be between 1 and %d"
-				       "(both included)\n", MLAN_MAX_CHANNEL);
+				       "(both included)\n",
+				       MLAN_MAX_CHANNEL);
 				ret = -EINVAL;
 				goto done;
 			}
@@ -3381,7 +3765,8 @@ woal_uap_ap_cfg_parse_data(moal_private *priv, mlan_uap_bss_param *ap_cfg,
 			if (atoi_ret < 1 || atoi_ret > MAX_STA_COUNT) {
 				PRINTM(MERROR,
 				       "AP_CFG: MAX_SCB must be between 1 to %d "
-				       "(both included)\n", MAX_STA_COUNT);
+				       "(both included)\n",
+				       MAX_STA_COUNT);
 				ret = -EINVAL;
 				goto done;
 			}
@@ -3408,8 +3793,7 @@ done:
  *
  *  @return         0 --success, otherwise fail
  */
-int
-woal_uap_set_ap_cfg(moal_private *priv, t_u8 *data, int len)
+int woal_uap_set_ap_cfg(moal_private *priv, t_u8 *data, int len)
 {
 	int ret = 0;
 	static char buf[MAX_BUF_LEN];
@@ -3418,7 +3802,7 @@ woal_uap_set_ap_cfg(moal_private *priv, t_u8 *data, int len)
 
 	ENTER();
 
-#define MIN_AP_CFG_CMD_LEN 16	/* strlen("ASCII_CMD=AP_CFG") */
+#define MIN_AP_CFG_CMD_LEN 16 /* strlen("ASCII_CMD=AP_CFG") */
 	if ((len - 1) <= MIN_AP_CFG_CMD_LEN) {
 		PRINTM(MERROR, "Invalid length of command\n");
 		ret = -EINVAL;
@@ -3491,6 +3875,56 @@ done:
 }
 
 /**
+ *  @brief Set/Get ap scan channel list
+ *
+ *  @param priv             A pointer to moal_private structure
+ *  @param action           MLAN_ACT_SET or MLAN_ACT_GET
+ *  @param scan_channels    A pointer to mlan_uap_scan_channels structure
+ *
+ *  @return                 MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
+ */
+static mlan_status
+woal_set_get_ap_scan_channels(moal_private *priv, t_u16 action,
+			      mlan_uap_scan_channels *scan_channels)
+{
+	mlan_status ret = MLAN_STATUS_SUCCESS;
+	mlan_ds_bss *bss = NULL;
+	mlan_ioctl_req *req = NULL;
+
+	ENTER();
+
+	req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_bss));
+	if (req == NULL) {
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	bss = (mlan_ds_bss *)req->pbuf;
+	bss->sub_command = MLAN_OID_UAP_SCAN_CHANNELS;
+	req->req_id = MLAN_IOCTL_BSS;
+	req->action = action;
+
+	moal_memcpy_ext(priv->phandle, &bss->param.ap_scan_channels,
+			scan_channels, sizeof(mlan_uap_scan_channels),
+			sizeof(bss->param.ap_scan_channels));
+
+	ret = woal_request_ioctl(priv, req, MOAL_IOCTL_WAIT);
+	if (ret != MLAN_STATUS_SUCCESS)
+		goto done;
+	if (action == MLAN_ACT_GET)
+		moal_memcpy_ext(priv->phandle, scan_channels,
+				&bss->param.ap_scan_channels,
+				sizeof(mlan_uap_scan_channels),
+				sizeof(mlan_uap_scan_channels));
+
+done:
+	if (ret != MLAN_STATUS_PENDING)
+		kfree(req);
+	LEAVE();
+	return ret;
+}
+
+/**
  *  @brief Set/Get uap channel
  *
  *  @param priv             A pointer to moal_private structure
@@ -3500,9 +3934,9 @@ done:
  *
  *  @return                 MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
  */
-mlan_status
-woal_set_get_ap_channel(moal_private *priv, t_u16 action,
-			t_u8 wait_option, chan_band_info * uap_channel)
+mlan_status woal_set_get_ap_channel(moal_private *priv, t_u16 action,
+				    t_u8 wait_option,
+				    chan_band_info *uap_channel)
 {
 	mlan_status ret = MLAN_STATUS_SUCCESS;
 	mlan_ds_bss *bss = NULL;
@@ -3539,6 +3973,129 @@ done:
 }
 
 /**
+ *  @brief start ACS scan
+ *
+ *  @param priv             A pointer to moal_private structure
+ *  @param action           MLAN_ACT_SET or MLAN_ACT_GET
+ *
+ *  @return                 MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
+ */
+static mlan_status woal_start_acs_scan(moal_private *priv)
+{
+	mlan_status ret = MLAN_STATUS_SUCCESS;
+	mlan_ds_bss *bss = NULL;
+	mlan_ioctl_req *req = NULL;
+
+	ENTER();
+
+	req = woal_alloc_mlan_ioctl_req(sizeof(mlan_ds_bss));
+	if (req == NULL) {
+		ret = MLAN_STATUS_FAILURE;
+		goto done;
+	}
+
+	bss = (mlan_ds_bss *)req->pbuf;
+	bss->sub_command = MLAN_OID_UAP_ACS_SCAN;
+	req->req_id = MLAN_IOCTL_BSS;
+	req->action = MLAN_ACT_SET;
+
+	ret = woal_request_ioctl(priv, req, MOAL_IOCTL_WAIT);
+	if (ret != MLAN_STATUS_SUCCESS)
+		goto done;
+	PRINTM(MIOCTL,
+	       "ACS scan done: bandcfg:[chanBand=0x%x chanWidth=0x%x chan2Offset=0x%x scanMode=0x%x], channel=%d\n",
+	       bss->param.ap_acs_scan.bandcfg.chanBand,
+	       bss->param.ap_acs_scan.bandcfg.chanWidth,
+	       bss->param.ap_acs_scan.bandcfg.chan2Offset,
+	       bss->param.ap_acs_scan.bandcfg.scanMode,
+	       bss->param.ap_acs_scan.chan);
+done:
+	if (ret != MLAN_STATUS_PENDING)
+		kfree(req);
+	LEAVE();
+	return ret;
+}
+
+/**
+ *  @brie check if we need do ACS scan
+ *
+ *  @param priv             A pointer to moal_private structure
+ *
+ *  @return                 MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
+ */
+static mlan_status woal_do_acs_check(moal_private *priv)
+{
+	mlan_status ret = MLAN_STATUS_SUCCESS;
+	mlan_uap_bss_param *sys_config = NULL;
+	mlan_uap_scan_channels *scan_channels = NULL;
+	chan_band_info uap_channel;
+	ENTER();
+
+	sys_config = kzalloc(sizeof(mlan_uap_bss_param), GFP_ATOMIC);
+	if (!sys_config) {
+		PRINTM(MERROR, "Fail to alloc memory for mlan_uap_bss_param\n");
+		LEAVE();
+		return MLAN_STATUS_FAILURE;
+	}
+
+	if (MLAN_STATUS_SUCCESS != woal_set_get_sys_config(priv, MLAN_ACT_GET,
+							   MOAL_IOCTL_WAIT,
+							   sys_config)) {
+		PRINTM(MERROR, "Fail to get sys config data\n");
+		kfree(sys_config);
+		LEAVE();
+		return MLAN_STATUS_FAILURE;
+	}
+	if (!(sys_config->bandcfg.scanMode == SCAN_MODE_ACS)) {
+		kfree(sys_config);
+		LEAVE();
+		return ret;
+	}
+	scan_channels = kzalloc(sizeof(mlan_uap_scan_channels), GFP_ATOMIC);
+	if (scan_channels == NULL) {
+		PRINTM(MERROR, "Fail to alloc scan channels buffer\n");
+		kfree(sys_config);
+		LEAVE();
+		return MLAN_STATUS_FAILURE;
+	}
+	scan_channels->remove_nop_channel = MTRUE;
+	if (MLAN_STATUS_SUCCESS !=
+	    woal_set_get_ap_scan_channels(priv, MLAN_ACT_GET, scan_channels)) {
+		PRINTM(MERROR, "Fail to get scan channels\n");
+		goto done;
+	}
+
+	if (scan_channels->num_remvoed_channel && scan_channels->num_of_chan) {
+		scan_channels->remove_nop_channel = 0;
+		/** set back new channel list after remove nop channels */
+		if (MLAN_STATUS_SUCCESS !=
+		    woal_set_get_ap_scan_channels(priv, MLAN_ACT_SET,
+						  scan_channels)) {
+			PRINTM(MERROR, "Fail to get scan channels\n");
+			goto done;
+		}
+	}
+	if (scan_channels->num_of_chan)
+		ret = woal_start_acs_scan(priv);
+	else
+		ret = MLAN_STATUS_FAILURE;
+	/** set to default channel 6 when 5G ACS is configured */
+	if ((ret != MLAN_STATUS_SUCCESS) &&
+	    (sys_config->bandcfg.chanBand == BAND_5GHZ)) {
+		memset(&uap_channel, 0, sizeof(uap_channel));
+		uap_channel.bandcfg.chanBand = DEFAULT_UAP_BAND;
+		uap_channel.channel = DEFAULT_UAP_CHANNEL;
+		ret = woal_set_get_ap_channel(priv, MLAN_ACT_SET,
+					      MOAL_IOCTL_WAIT, &uap_channel);
+	}
+done:
+	kfree(scan_channels);
+	kfree(sys_config);
+	LEAVE();
+	return ret;
+}
+
+/**
  *  @brief uap BSS control ioctl handler
  *
  *  @param priv             A pointer to moal_private structure
@@ -3546,8 +4103,7 @@ done:
  *  @param data             BSS control type
  *  @return                 0 --success, otherwise fail
  */
-int
-woal_uap_bss_ctrl(moal_private *priv, t_u8 wait_option, int data)
+int woal_uap_bss_ctrl(moal_private *priv, t_u8 wait_option, int data)
 {
 	mlan_ioctl_req *req = NULL;
 	mlan_ds_bss *bss = NULL;
@@ -3578,7 +4134,8 @@ woal_uap_bss_ctrl(moal_private *priv, t_u8 wait_option, int data)
 #if CFG80211_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
 			   || moal_extflg_isset(priv->phandle, EXT_DFS_OFFLOAD)
 #endif
-			) {
+		) {
+			woal_do_acs_check(priv);
 			/* about to start bss: issue channel check */
 			status = woal_11h_channel_check_ioctl(priv,
 							      MOAL_IOCTL_WAIT);
@@ -3650,8 +4207,7 @@ done:
  *  @param dev     A pointer to net_device structure
  *  @return        N/A
  */
-void
-woal_uap_set_multicast_list(struct net_device *dev)
+void woal_uap_set_multicast_list(struct net_device *dev)
 {
 	ENTER();
 
@@ -3668,19 +4224,17 @@ woal_uap_set_multicast_list(struct net_device *dev)
  *  @return         0 --success, otherwise fail
  */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
-int
-woal_uap_do_ioctl(struct net_device *dev, struct ifreq *req, void __user * data,
-		  int cmd)
+int woal_uap_do_ioctl(struct net_device *dev, struct ifreq *req,
+		      void __user *data, int cmd)
 #else
-int
-woal_uap_do_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
+int woal_uap_do_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
 #endif
 {
 	int ret = 0;
 	ENTER();
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
-	if (in_compat_syscall())	/* not implemented yet */
+	if (in_compat_syscall()) /* not implemented yet */
 		return -EOPNOTSUPP;
 #endif
 
@@ -3754,8 +4308,7 @@ woal_uap_do_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
  *
  *  @return             N/A
  */
-void
-woal_uap_get_version(moal_private *priv, char *version, int max_len)
+void woal_uap_get_version(moal_private *priv, char *version, int max_len)
 {
 	mlan_ds_get_info *info = NULL;
 	mlan_ioctl_req *req = NULL;
@@ -3799,9 +4352,8 @@ woal_uap_get_version(moal_private *priv, char *version, int max_len)
  *  @return                     MLAN_STATUS_SUCCESS/MLAN_STATUS_PENDING --
  * success, otherwise fail
  */
-mlan_status
-woal_uap_get_stats(moal_private *priv, t_u8 wait_option,
-		   mlan_ds_uap_stats *ustats)
+mlan_status woal_uap_get_stats(moal_private *priv, t_u8 wait_option,
+			       mlan_ds_uap_stats *ustats)
 {
 	mlan_ds_get_info *info = NULL;
 	mlan_ioctl_req *req = NULL;
@@ -3851,9 +4403,8 @@ woal_uap_get_stats(moal_private *priv, t_u8 wait_option,
  *
  *  @return                 MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
  */
-mlan_status
-woal_set_get_ap_wmm_para(moal_private *priv, t_u16 action,
-			 wmm_parameter_t *ap_wmm_para)
+mlan_status woal_set_get_ap_wmm_para(moal_private *priv, t_u16 action,
+				     wmm_parameter_t *ap_wmm_para)
 {
 	mlan_status ret = MLAN_STATUS_SUCCESS;
 	mlan_ds_bss *bss = NULL;
@@ -3907,9 +4458,9 @@ done:
  *
  *  @return                 MLAN_STATUS_SUCCESS or MLAN_STATUS_FAILURE
  */
-mlan_status
-woal_set_get_sys_config(moal_private *priv, t_u16 action,
-			t_u8 wait_option, mlan_uap_bss_param *sys_cfg)
+mlan_status woal_set_get_sys_config(moal_private *priv, t_u16 action,
+				    t_u8 wait_option,
+				    mlan_uap_bss_param *sys_cfg)
 {
 	mlan_status ret = MLAN_STATUS_SUCCESS;
 	mlan_ds_bss *bss = NULL;
@@ -3957,8 +4508,7 @@ done:
  *
  *  @return         N/A
  */
-void
-woal_set_sys_config_invalid_data(mlan_uap_bss_param *config)
+void woal_set_sys_config_invalid_data(mlan_uap_bss_param *config)
 {
 	ENTER();
 

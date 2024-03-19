@@ -19,9 +19,9 @@
 CONFIG_COMPATDIR=n
 ifeq ($(CONFIG_COMPATDIR), y)
 COMPATDIR=/lib/modules/$(KERNELVERSION_X86)/build/compat-wireless-3.2-rc1-1/include
-CC =		$(CROSS_COMPILE)gcc -I$(COMPATDIR)
+CC ?=		$(CROSS_COMPILE)gcc -I$(COMPATDIR)
 else
-CC =		$(CROSS_COMPILE)gcc
+CC ?=		$(CROSS_COMPILE)gcc
 endif
 
 LD ?=		$(CROSS_COMPILE)ld
@@ -32,7 +32,26 @@ YMD=		`date +%Y%m%d%H%M`
 # Configuration Options
 #############################################################################
 # Multi-chipsets
+CONFIG_SD8887=n
+CONFIG_SD8897=n
+CONFIG_USB8897=n
+CONFIG_PCIE8897=n
+CONFIG_SD8977=n
+CONFIG_SD8978=n
+CONFIG_USB8978=n
+CONFIG_SD8997=n
+CONFIG_USB8997=n
+CONFIG_PCIE8997=n
 CONFIG_SD8987=y
+CONFIG_SD9097=n
+CONFIG_SD9177=n
+CONFIG_SD8801=y
+CONFIG_USB8801=y
+CONFIG_USB9097=n
+CONFIG_PCIE9097=n
+CONFIG_SD9098=n
+CONFIG_USB9098=n
+CONFIG_PCIE9098=n
 
 
 # Debug Option
@@ -75,18 +94,20 @@ CONFIG_EMBEDDED_SUPP_AUTH=y
 endif
 endif
 
+#ifdef SDIO_MMC
 # SDIO suspend/resume
 CONFIG_SDIO_SUSPEND_RESUME=y
+#endif
 
 # DFS testing support
 CONFIG_DFS_TESTING_SUPPORT=y
 
-# Multi-channel support
-CONFIG_MULTI_CHAN_SUPPORT=y
 
 
-CONFIG_ANDROID_KERNEL=n
 
+# Use static link for app build
+export CONFIG_STATIC_LINK=y
+CONFIG_ANDROID_KERNEL=y
 
 #32bit app over 64bit kernel support
 CONFIG_USERSPACE_32BIT_OVER_KERNEL_64BIT=n
@@ -104,14 +125,18 @@ ccflags-y += -DLINUX
 
 
 
+ARCH ?= arm64
+CONFIG_IMX_SUPPORT=y
+ifeq ($(CONFIG_IMX_SUPPORT),y)
+ccflags-y += -DIMX_SUPPORT
+endif
+KERNELDIR ?= /usr/src/arm/androidR_kernel/kernel_imx_5_10_y
+CROSS_COMPILE ?= aarch64-linux-gnu-
+CC=/usr/local/arm/android-ndk-r23-beta5/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
 
-KERNELVERSION_X86 := 	$(shell uname -r)
-KERNELDIR ?= /lib/modules/$(KERNELVERSION_X86)/build
 LD += -S
 
-BINDIR = ../bin_sd8987
-
-
+BINDIR = ../bin_wlan
 APPDIR= $(shell if test -d "mapp"; then echo mapp; fi)
 
 #############################################################################
@@ -120,7 +145,7 @@ APPDIR= $(shell if test -d "mapp"; then echo mapp; fi)
 
 	ccflags-y += -I$(KERNELDIR)/include
 
-	ccflags-y += -DFPNUM='"87"'
+	ccflags-y += -DFPNUM='"92"'
 
 ifeq ($(CONFIG_DEBUG),1)
 	ccflags-y += -DDEBUG_LEVEL1
@@ -171,13 +196,12 @@ ifeq ($(CONFIG_USERSPACE_32BIT_OVER_KERNEL_64BIT),y)
 	ccflags-y += -DUSERSPACE_32BIT_OVER_KERNEL_64BIT
 endif
 
+#ifdef SDIO_MMC
 ifeq ($(CONFIG_SDIO_SUSPEND_RESUME),y)
 	ccflags-y += -DSDIO_SUSPEND_RESUME
 endif
+#endif
 
-ifeq ($(CONFIG_MULTI_CHAN_SUPPORT),y)
-	ccflags-y += -DMULTI_CHAN_SUPPORT
-endif
 
 ifeq ($(CONFIG_DFS_TESTING_SUPPORT),y)
 	ccflags-y += -DDFS_TESTING_SUPPORT
@@ -198,34 +222,108 @@ ifeq ($(CONFIG_T50), y)
 	ccflags-y += -DT3T
 endif
 
+ifeq ($(CONFIG_SD8887),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD8887
+endif
+ifeq ($(CONFIG_SD8897),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD8897
+endif
+ifeq ($(CONFIG_SD8977),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD8977
+endif
+ifeq ($(CONFIG_SD8978),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD8978
+endif
+ifeq ($(CONFIG_SD8997),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD8997
+endif
 ifeq ($(CONFIG_SD8987),y)
 	CONFIG_SDIO=y
 	ccflags-y += -DSD8987
 endif
+ifeq ($(CONFIG_SD9097),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD9097
+endif
+ifeq ($(CONFIG_SD9177),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD9177
+endif
+ifeq ($(CONFIG_SD8801),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD8801
+endif
+ifeq ($(CONFIG_SD9098),y)
+	CONFIG_SDIO=y
+	ccflags-y += -DSD9098
+endif
+ifeq ($(CONFIG_USB8801),y)
+	CONFIG_MUSB=y
+	ccflags-y += -DUSB8801
+endif
+ifeq ($(CONFIG_USB8897),y)
+	CONFIG_MUSB=y
+	ccflags-y += -DUSB8897
+endif
+ifeq ($(CONFIG_USB8997),y)
+	CONFIG_MUSB=y
+	ccflags-y += -DUSB8997
+endif
+ifeq ($(CONFIG_USB8978),y)
+	CONFIG_MUSB=y
+	ccflags-y += -DUSB8978
+endif
+ifeq ($(CONFIG_USB9097),y)
+	CONFIG_MUSB=y
+	ccflags-y += -DUSB9097
+endif
+ifeq ($(CONFIG_USB9098),y)
+	CONFIG_MUSB=y
+	ccflags-y += -DUSB9098
+endif
+ifeq ($(CONFIG_PCIE8897),y)
+	CONFIG_PCIE=y
+	ccflags-y += -DPCIE8897
+endif
+ifeq ($(CONFIG_PCIE8997),y)
+	CONFIG_PCIE=y
+	ccflags-y += -DPCIE8997
+endif
+ifeq ($(CONFIG_PCIE9097),y)
+	CONFIG_PCIE=y
+	ccflags-y += -DPCIE9097
+endif
+ifeq ($(CONFIG_PCIE9098),y)
+	CONFIG_PCIE=y
+	ccflags-y += -DPCIE9098
+endif
+ifeq ($(CONFIG_SDIO),y)
+	ccflags-y += -DSDIO
+	ccflags-y += -DSDIO_MMC
+endif
+ifeq ($(CONFIG_MUSB),y)
+	ccflags-y += -DUSB
+endif
+ifeq ($(CONFIG_PCIE),y)
+	ccflags-y += -DPCIE
+endif
 
+ifeq ($(CONFIG_MAC80211_SUPPORT),y)
+	ccflags-y += -DMAC80211_SUPPORT
+endif
+ifeq ($(CONFIG_MAC80211_SUPPORT_UAP),y)
+	ccflags-y += -DMAC80211_SUPPORT_UAP
+endif
+ifeq ($(CONFIG_MAC80211_SUPPORT_MESH),y)
+	ccflags-y += -DMAC80211_SUPPORT_MESH
+endif
 
 # add -Wno-packed-bitfield-compat when GCC version greater than 4.4
-GCC_VERSION := $(shell echo `gcc -dumpversion | cut -f1-2 -d.` \>= 4.4 | sed -e 's/\./*100+/g' | bc )
-ifeq ($(GCC_VERSION),1)
-	ccflags-y += -Wno-packed-bitfield-compat
-endif
-WimpGCC_VERSION := $(shell echo `gcc -dumpversion | cut -f1 -d.`| bc )
-ifeq ($(shell test $(WimpGCC_VERSION) -ge 7; echo $$?),0)
-ccflags-y += -Wimplicit-fallthrough=3
-endif
-#ccflags-y += -Wunused-but-set-variable
-#ccflags-y += -Wmissing-prototypes
-#ccflags-y += -Wold-style-definition
-#ccflags-y += -Wtype-limits
-#ccflags-y += -Wsuggest-attribute=format
-#ccflags-y += -Wmissing-include-dirs
-#ccflags-y += -Wshadow
-#ccflags-y += -Wsign-compare
-#ccflags-y += -Wunused-macros
-#ccflags-y += -Wmissing-field-initializers
-#ccflags-y += -Wstringop-truncation
-#ccflags-y += -Wmisleading-indentation
-#ccflags-y += -Wunused-const-variable
 #############################################################################
 # Make Targets
 #############################################################################
@@ -358,11 +456,20 @@ MLANOBJS =	mlan/mlan_shim.o mlan/mlan_init.o \
 		mlan/mlan_module.o
 
 MLANOBJS += mlan/mlan_wmm.o
+ifeq ($(CONFIG_MUSB),y)
+MLANOBJS += mlan/mlan_usb.o
+endif
+ifeq ($(CONFIG_SDIO),y)
 MLANOBJS += mlan/mlan_sdio.o
+endif
+ifeq ($(CONFIG_PCIE),y)
+MLANOBJS += mlan/mlan_pcie.o
+endif
 MLANOBJS += mlan/mlan_11n_aggr.o
 MLANOBJS += mlan/mlan_11n_rxreorder.o
 MLANOBJS += mlan/mlan_11n.o
 MLANOBJS += mlan/mlan_11ac.o
+MLANOBJS += mlan/mlan_11ax.o
 MLANOBJS += mlan/mlan_11d.o
 MLANOBJS += mlan/mlan_11h.o
 ifeq ($(CONFIG_STA_SUPPORT),y)
@@ -406,6 +513,10 @@ MOALOBJS += mlinux/moal_proc.o
 MOALOBJS += mlinux/moal_debug.o
 endif
 
+ifeq ($(CONFIG_MAC80211_SUPPORT),y)
+MOALOBJS += mlinux/moal_mac80211.o
+MLANOBJS += mlan/mlan_mac80211.o
+endif
 
 
 
@@ -416,15 +527,23 @@ endif
 obj-m := mlan.o
 mlan-objs := $(MLANOBJS)
 
+ifeq ($(CONFIG_MUSB),y)
+MOALOBJS += mlinux/moal_usb.o
+endif
+ifeq ($(CONFIG_SDIO),y)
 MOALOBJS += mlinux/moal_sdio_mmc.o
-obj-m += sdxxx.o
-sdxxx-objs := $(MOALOBJS)
+endif
+ifeq ($(CONFIG_PCIE),y)
+MOALOBJS += mlinux/moal_pcie.o
+endif
+obj-m += moal.o
+moal-objs := $(MOALOBJS)
 
 # Otherwise we were called directly from the command line; invoke the kernel build system.
 else
 
 default:
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
 
 endif
 
@@ -432,36 +551,12 @@ endif
 
 export		CC LD ccflags-y KERNELDIR
 
-ifeq ($(CONFIG_STA_SUPPORT),y)
-ifeq ($(CONFIG_UAP_SUPPORT),y)
-.PHONY: mapp/mlanconfig mapp/mlan2040coex mapp/mlanevent mapp/uaputl mapp/mlanutl clean distclean
-else
-.PHONY: mapp/mlanconfig mapp/mlanevent mapp/mlan2040coex mapp/mlanutl clean distclean
-endif
-else
-ifeq ($(CONFIG_UAP_SUPPORT),y)
-.PHONY: mapp/mlanevent mapp/uaputl clean distclean
-endif
-endif
+.PHONY: mapp/mlanconfig mapp/mlanutl clean distclean
 	@echo "Finished Making NXP Wlan Linux Driver"
 
-ifeq ($(CONFIG_STA_SUPPORT),y)
 mapp/mlanconfig:
 	$(MAKE) -C $@
 mapp/mlanutl:
-	$(MAKE) -C $@
-mapp/mlan2040coex:
-	$(MAKE) -C $@
-endif
-ifeq ($(CONFIG_UAP_SUPPORT),y)
-mapp/uaputl:
-	$(MAKE) -C $@
-endif
-ifeq ($(CONFIG_WIFI_DIRECT_SUPPORT),y)
-mapp/wifidirectutl:
-	$(MAKE) -C $@
-endif
-mapp/mlanevent:
 	$(MAKE) -C $@
 
 echo:
@@ -474,33 +569,14 @@ build:		echo default
 
 	cp -f mlan.$(MODEXT) $(BINDIR)/mlan$(DBG).$(MODEXT)
 
-	cp -f sdxxx.$(MODEXT) $(BINDIR)/sd8987$(DBG).$(MODEXT)
-	cp -rpf script/sdio_mmc/* $(BINDIR)/
+	cp -f moal.$(MODEXT) $(BINDIR)/moal$(DBG).$(MODEXT)
+	cp -rpf script/load $(BINDIR)/
+	cp -rpf script/unload $(BINDIR)/
 
-ifeq ($(CONFIG_STA_SUPPORT),y)
-	cp -f README $(BINDIR)
 	cp -f README_MLAN $(BINDIR)
 ifneq ($(APPDIR),)
 	$(MAKE) -C mapp/mlanconfig $@ INSTALLDIR=$(BINDIR)
 	$(MAKE) -C mapp/mlanutl $@ INSTALLDIR=$(BINDIR)
-	$(MAKE) -C mapp/mlan2040coex $@ INSTALLDIR=$(BINDIR)
-endif
-endif
-ifeq ($(CONFIG_UAP_SUPPORT),y)
-	cp -f README_UAP $(BINDIR)
-ifneq ($(APPDIR),)
-	$(MAKE) -C mapp/uaputl $@ INSTALLDIR=$(BINDIR)
-endif
-endif
-ifeq ($(CONFIG_WIFI_DIRECT_SUPPORT),y)
-	cp -f README_WIFIDIRECT $(BINDIR)
-	cp -rpf script/wifidirect $(BINDIR)
-ifneq ($(APPDIR),)
-	$(MAKE) -C mapp/wifidirectutl $@ INSTALLDIR=$(BINDIR)
-endif
-endif
-ifneq ($(APPDIR),)
-	$(MAKE) -C mapp/mlanevent $@ INSTALLDIR=$(BINDIR)
 endif
 
 clean:
@@ -515,26 +591,18 @@ clean:
 	-find . -name "*dwo" -exec rm {} \;
 	-rm -rf .tmp_versions
 ifneq ($(APPDIR),)
-ifeq ($(CONFIG_STA_SUPPORT),y)
 	$(MAKE) -C mapp/mlanconfig $@
 	$(MAKE) -C mapp/mlanutl $@
-	$(MAKE) -C mapp/mlan2040coex $@
 endif
-ifeq ($(CONFIG_UAP_SUPPORT),y)
-	$(MAKE) -C mapp/uaputl $@
-endif
-ifeq ($(CONFIG_WIFI_DIRECT_SUPPORT),y)
-	$(MAKE) -C mapp/wifidirectutl $@
-endif
-	$(MAKE) -C mapp/mlanevent $@
-endif
+#ifdef SDIO
+#endif // SDIO
 
 install: default
 
 	cp -f mlan.$(MODEXT) $(INSTALLDIR)/mlan$(DBG).$(MODEXT)
-	cp -f ../io/sdio/$(PLATFORM)/sdio.$(MODEXT) $(INSTALLDIR)
-	cp -f sdxxx.$(MODEXT) $(INSTALLDIR)/sd8987$(DBG).$(MODEXT)
-	echo "sd8987 Driver Installed"
+	cp -f moal.$(MODEXT) $(INSTALLDIR)/moal$(DBG).$(MODEXT)
+	echo $(INSTALLDIR)
+	echo "MX Driver Installed"
 
 distclean:
 	-find . -name "*.o" -exec rm {} \;
@@ -553,18 +621,8 @@ distclean:
 	-find . -name "*dwo" -exec rm {} \;
 	-rm -rf .tmp_versions
 ifneq ($(APPDIR),)
-ifeq ($(CONFIG_STA_SUPPORT),y)
 	$(MAKE) -C mapp/mlanconfig $@
 	$(MAKE) -C mapp/mlanutl $@
-	$(MAKE) -C mapp/mlan2040coex $@
-endif
-ifeq ($(CONFIG_UAP_SUPPORT),y)
-	$(MAKE) -C mapp/uaputl $@
-endif
-ifeq ($(CONFIG_WIFI_DIRECT_SUPPORT),y)
-	$(MAKE) -C mapp/wifidirectutl $@
-endif
-	$(MAKE) -C mapp/mlanevent $@
 endif
 
 # End of file
