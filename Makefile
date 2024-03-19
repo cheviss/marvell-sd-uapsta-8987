@@ -130,9 +130,9 @@ CONFIG_IMX_SUPPORT=y
 ifeq ($(CONFIG_IMX_SUPPORT),y)
 ccflags-y += -DIMX_SUPPORT
 endif
-KERNELDIR ?= /usr/src/arm/androidR_kernel/kernel_imx_5_10_y
+KERNEL_SRC ?= /lib/modules/$(KERNELVERSION_X86)/build
+KERNELDIR = $(KERNEL_SRC)
 CROSS_COMPILE ?= aarch64-linux-gnu-
-CC=/usr/local/arm/android-ndk-r23-beta5/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
 
 LD += -S
 
